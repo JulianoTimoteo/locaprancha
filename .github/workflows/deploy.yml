@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 permissions:
@@ -35,24 +34,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build application
+      - name: Build Vite
         run: npm run build
 
-      - name: Verify dist
+      - name: Validate dist
         run: |
+          echo "Validando build..."
+
           test -f dist/index.html
           test -d dist/assets
 
-          echo "===== DIST INDEX ====="
-          cat dist/index.html
-
           if grep -q "/src/main.tsx" dist/index.html; then
-            echo "ERRO: dist/index.html ainda aponta para src/main.tsx"
+            echo "ERRO: dist/index.html ainda referencia src/main.tsx"
             exit 1
           fi
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+          if grep -q 'src="/src/' dist/index.html; then
+            echo "ERRO: dist/index.html referencia código-fonte"
+            exit 1
+          fi
+
+          echo "BUILD VALIDADO COM SUCESSO"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
