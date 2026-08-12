@@ -1,0 +1,73 @@
+
+.cyber-nav-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  border: 1px solid transparent;
+}
+
+.cyber-nav-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.dark .cyber-nav-btn::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 255, 255, 0.1),
+    transparent
+  );
+}
+
+.cyber-nav-btn:hover::before {
+  left: 100%;
+}
+
+.cyber-nav-btn-active {
+  background: rgba(64, 128, 12, 0.1) !important;
+  border-color: rgba(64, 128, 12, 0.3) !important;
+  box-shadow: 0 0 15px rgba(64, 128, 12, 0.15),
+              inset 0 0 10px rgba(64, 128, 12, 0.1);
+  color: #40800c !important;
+}
+
+.cyber-nav-btn-active .nav-icon {
+  color: #40800c !important;
+}
+
+.dark .cyber-nav-btn-active {
+  background: rgba(0, 255, 255, 0.05) !important;
+  border-color: rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.15),
+              inset 0 0 15px rgba(0, 255, 255, 0.1);
+  color: #00ffff !important;
+}
+
+.dark .cyber-nav-btn-active .nav-icon {
+  color: #00ffff !important;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.8));
+}
+
+/* Glassmorphism for mobile nav */
+.cyber-mobile-nav {
+  backdrop-filter: blur(12px);
+  background: rgba(var(--card-rgb), 0.8) !important;
+}
+
+.dark .cyber-mobile-nav {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-top: 1px solid rgba(0, 255, 255, 0.1);
+}

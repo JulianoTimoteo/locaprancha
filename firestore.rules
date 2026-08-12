@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================
+    // FUNCTIONS
+    // ============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userExists() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return userExists() && (
+        getUserData().role == role || 
+        getUserData().perfil == role || 
+        getUserData().access_level == role || 
+        getUserData().nivelAcesso == role
+      );
+    }
+
+    function isGod() {
+      return hasRole('GOD');
+    }
+
+    function isAdmin() {
+      return isGod() || hasRole('ADMINISTRADOR');
+    }
+
+    function isLider() {
+      return hasRole('LIDER');
+    }
+
+    function canAccessTab(tabId) {
+      return isGod() || (
+        userExists() && 
+        getUserData().status == "ATIVO" &&
+        getUserData().permissions != null && 
+        tabId in getUserData().permissions
+      );
+    }
+
+    // ============================================================
+    // COLLECTIONS
+    // ============================================================
+
+    match /usuarios/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isGod() || isAdmin());
+      
+      allow create: if isGod() || (
+        isAdmin() && 
+        request.resource.data.role != "GOD" &&
+        request.resource.data.status == "ATIVO"
+      );
+
+      allow update: if isGod() || (
+        isAdmin() && 
+        resource.data.role != "GOD" && 
+        request.resource.data.role != "GOD" &&
+        userId != request.auth.uid // Impede autopromoção para GOD
+      );
+      
+      allow delete: if isGod();
+    }
+
+    match /frotas/{frotaId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isLider() || canAccessTab('pranchas');
+      allow delete: if isAdmin();
+    }
+
+    match /frentes/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isLider() || canAccessTab('frentes');
+      allow delete: if isAdmin();
+    }
+
+    match /equipamentos/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isLider() || canAccessTab('equipamentos');
+      allow delete: if isAdmin();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAdmin() || canAccessTab('auditoria');
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Imutável
+    }
+
+    match /agenda/{reservaId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && canAccessTab('reservas');
+      allow update: if isAuthenticated() && canAccessTab('reservas');
+      allow delete: if isAdmin();
+    }
+
+    match /relatorios/{id} {
+      allow read: if isAuthenticated() && canAccessTab('relatorios');
+      allow write: if isAdmin();
+    }
+
+    // ============================================================
+    // DENY BY DEFAULT
+    // ============================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
