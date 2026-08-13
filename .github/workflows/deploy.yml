@@ -29,13 +29,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install
 
       - name: Build Vite
-        run: npm run build
+        run: bun run build
 
       - name: Validate dist
         run: |
