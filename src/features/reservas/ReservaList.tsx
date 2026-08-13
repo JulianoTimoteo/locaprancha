@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useReservas } from './useReservas';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ReservaForm } from './ReservaForm';
@@ -78,42 +78,41 @@ export function ReservaList() {
   const canManage = hasPermission(profile, 'usuarios'); // Simplificação baseada em permissão real
   const canOperate = hasPermission(profile, 'reservas');
 
-  // Ordenação Operacional (Regra 21)
-  const sortedReservas = [...reservas].sort((a, b) => {
-    const order = { 'Iniciado': 1, 'Agendado': 2, 'Pendente': 3, 'Aprovado': 3, 'Em Trânsito': 4, 'Finalizado': 5, 'Concluído': 5, 'Cancelado': 6, 'Recusado': 6 };
-    const getOrder = (s: string) => order[s as keyof typeof order] || 99;
-    
-    if (getOrder(a.status) !== getOrder(b.status)) {
-      return getOrder(a.status) - getOrder(b.status);
-    }
-    
-    // Dentro do mesmo grupo, data e hora mais recentes primeiro
-    const dateA = a.data || '0000-00-00';
-    const dateB = b.data || '0000-00-00';
-    if (dateA !== dateB) return dateB.localeCompare(dateA);
-    
-    const timeA = a.hora || '00:00';
-    const timeB = b.hora || '00:00';
-    return timeB.localeCompare(timeA);
-  });
+  const filtered = useMemo(() => {
+    const sorted = [...reservas].sort((a, b) => {
+      const order = { 'Iniciado': 1, 'Agendado': 2, 'Pendente': 3, 'Aprovado': 3, 'Em Trânsito': 4, 'Finalizado': 5, 'Concluído': 5, 'Cancelado': 6, 'Recusado': 6 };
+      const getOrder = (s: string) => order[s as keyof typeof order] || 99;
+      
+      if (getOrder(a.status) !== getOrder(b.status)) {
+        return getOrder(a.status) - getOrder(b.status);
+      }
+      
+      const dateA = a.data || '0000-00-00';
+      const dateB = b.data || '0000-00-00';
+      if (dateA !== dateB) return dateB.localeCompare(dateA);
+      
+      const timeA = a.hora || '00:00';
+      const timeB = b.hora || '00:00';
+      return timeB.localeCompare(timeA);
+    });
 
-  const filtered = sortedReservas.filter(r => {
-    const searchString = searchTerm.toLowerCase();
-    const matchesSearch = 
-      (r.pranchaId || '').toLowerCase().includes(searchString) ||
-      (r.solicitanteNome || '').toLowerCase().includes(searchString) ||
-      (r.frenteTrabalho || '').toLowerCase().includes(searchString) ||
-      (r.origem || '').toLowerCase().includes(searchString) ||
-      (r.destino || '').toLowerCase().includes(searchString) ||
-      (r.status || '').toLowerCase().includes(searchString);
+    return sorted.filter(r => {
+      const searchString = searchTerm.toLowerCase();
+      const matchesSearch = 
+        (r.pranchaId || '').toLowerCase().includes(searchString) ||
+        (r.solicitanteNome || '').toLowerCase().includes(searchString) ||
+        (r.frenteTrabalho || '').toLowerCase().includes(searchString) ||
+        (r.origem || '').toLowerCase().includes(searchString) ||
+        (r.destino || '').toLowerCase().includes(searchString) ||
+        (r.status || '').toLowerCase().includes(searchString);
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-    // RBAC Hardened (Regra 31)
-    if (isGod(profile) || isAdmin(profile) || profile?.role === 'LIDER') return true;
-    if (profile?.role === 'MOTORISTA') return r.motoristaId === profile.uid || ['Aprovado', 'Agendado', 'Iniciado', 'Em Trânsito'].includes(r.status);
-    return r.userId === profile?.uid || r.solicitanteId === profile?.uid;
-  });
+      if (isGod(profile) || isAdmin(profile) || profile?.role === 'LIDER') return true;
+      if (profile?.role === 'MOTORISTA') return r.motoristaId === profile.uid || ['Aprovado', 'Agendado', 'Iniciado', 'Em Trânsito'].includes(r.status);
+      return r.userId === profile?.uid || r.solicitanteId === profile?.uid;
+    });
+  }, [reservas, searchTerm, profile]);
 
   const getStatusBadge = (reserva: Reserva) => {
     const status = reserva.status;
@@ -153,16 +152,16 @@ export function ReservaList() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 lg:pb-0">
-      <div className="flex justify-between items-center px-1">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-1 gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight uppercase">Agenda Operacional</h2>
-          <p className="text-muted-foreground text-sm font-medium">Controle de transportes e locações.</p>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">Agenda Operacional</h2>
+          <p className="text-muted-foreground text-xs sm:text-sm font-medium">Controle de transportes e locações.</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           {hasPermission(profile, 'reservas') && (
             <Button 
-              className="hidden lg:flex gap-2 shadow-lg bg-emerald-600 hover:bg-emerald-700 font-bold" 
+              className="flex-1 sm:flex-none gap-2 shadow-lg bg-emerald-600 hover:bg-emerald-700 font-bold" 
               onClick={() => {
                 setLocarInitialData(null);
                 setIsLocarModalOpen(true);
@@ -172,7 +171,7 @@ export function ReservaList() {
             </Button>
           )}
           {isAdmin(profile) && (
-            <Button className="hidden lg:flex gap-2 shadow-lg shadow-primary/20 font-bold" onClick={() => {
+            <Button className="flex-1 sm:flex-none gap-2 shadow-lg shadow-primary/20 font-bold" onClick={() => {
               setIsFormOpen(true);
             }}>
               <Calendar size={18} /> 📅 AGENDAR
@@ -196,24 +195,7 @@ export function ReservaList() {
         </Button>
       </div>
 
-      <div className="lg:hidden px-1 flex gap-2 mb-4">
-         {hasPermission(profile, 'reservas') && (
-            <Button 
-              className="flex-1 gap-2 shadow-lg bg-emerald-600 hover:bg-emerald-700 font-bold h-12" 
-              onClick={() => {
-                setLocarInitialData(null);
-                setIsLocarModalOpen(true);
-              }}
-            >
-              <Truck size={18} /> 🚜 LOCAR
-            </Button>
-          )}
-          {isAdmin(profile) && (
-            <Button className="flex-1 gap-2 shadow-lg shadow-primary/20 font-bold h-12" onClick={() => setIsFormOpen(true)}>
-              <Calendar size={18} /> 📅 AGENDAR
-            </Button>
-          )}
-      </div>
+      {/* Buttons moved to top for better mobile reachability, keeping this block empty or removed */}
 
 
       {/* Mobile View: Cards */}

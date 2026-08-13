@@ -20,24 +20,13 @@ export function useDashboardData() {
     let unsubAgenda: (() => void) | undefined;
     let unsubLogs: (() => void) | undefined;
 
-    try {
-      unsubFrotas = subscribeToFrotas((data) => {
-        setPranchas(data);
-      });
-
-      unsubAgenda = subscribeToAgenda((data) => {
-        setAgenda(data);
-      });
-
-      unsubLogs = subscribeToAuditLogs((data) => {
-        setLogs(data);
-        setLoading(false);
-      });
-    } catch (err: any) {
-      console.error("Erro ao conectar ao Firestore:", err);
-      setError("Não foi possível carregar os dados em tempo real.");
+    // Conectar em paralelo
+    unsubFrotas = subscribeToFrotas(setPranchas);
+    unsubAgenda = subscribeToAgenda(setAgenda);
+    unsubLogs = subscribeToAuditLogs((data) => {
+      setLogs(data);
       setLoading(false);
-    }
+    });
 
     return () => {
       unsubFrotas?.();

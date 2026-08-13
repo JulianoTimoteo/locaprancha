@@ -53,15 +53,15 @@ export function UsuarioList() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight uppercase flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase flex items-center gap-2">
             <UserCog className="text-primary" /> Gestão de Usuários
           </h2>
-          <p className="text-muted-foreground font-medium text-sm">Controle de acessos, perfis e segurança do sistema.</p>
+          <p className="text-muted-foreground font-medium text-xs sm:text-sm">Controle de acessos e segurança.</p>
         </div>
         
-        <Button className="gap-2 font-bold shadow-lg shadow-primary/20" onClick={handleNew}>
+        <Button className="w-full sm:w-auto gap-2 font-bold shadow-lg shadow-primary/20" onClick={handleNew}>
           <Plus size={18} /> NOVO USUÁRIO
         </Button>
       </div>

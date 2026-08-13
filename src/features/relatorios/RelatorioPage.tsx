@@ -25,10 +25,10 @@ import {
   Search,
   Filter
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { generateOperationalReportPdf } from '@/lib/pdf/reportPdfGenerator';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
 
 
 const STATUS_LIST = [
@@ -59,46 +59,76 @@ export function RelatorioPage() {
   const reportRef = useRef<HTMLDivElement>(null);
 
   const exportPDF = async () => {
-    if (!reportRef.current) return;
-    const toastId = toast.loading('Gerando PDF profissional...');
+    const toastId = toast.loading('Gerando PDF operacional nativo...');
     try {
-      // Ajustar escala para melhor qualidade
-      const canvas = await html2canvas(reportRef.current, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const reportData = {
+        titulo: "RELATÓRIO OPERACIONAL",
+        periodoInicio: filters.dataInicio,
+        periodoFim: filters.dataFim,
+        usuario: {
+          nome: profile?.name || "Usuário não identificado",
+          nickname: profile?.nickname
+        },
+        resumo: kpis,
+        operacoes: filteredData
+      };
+
+      const doc = generateOperationalReportPdf(reportData);
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`relatorio-operacional-${filters.dataInicio}-a-${filters.dataFim}.pdf`);
-      toast.success('Relatório PDF exportado com sucesso!', { id: toastId });
+      const fileName = `LOCAPRANCHA_Relatorio_Operacional_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+      toast.success('PDF gerado com sucesso!', { id: toastId });
     } catch (e) {
-      toast.error('Erro ao gerar PDF', { id: toastId });
+      console.error('PDF_GENERATION_ERROR:', e);
+      toast.error('Não foi possível gerar o PDF. Tente novamente.', { id: toastId });
     }
   };
 
+
   const shareWhatsApp = () => {
-    let text = `🚜 *LOCAPRANCHA — RELATÓRIO OPERACIONAL*\n`;
-    text += `━━━━━━━━━━━━━━━━━━\n`;
-    text += `📅 Período: ${filters.dataInicio} a ${filters.dataFim}\n`;
-    text += `📊 Total Operações: ${kpis.total}\n`;
+    const header = `━━━━━━━━━━━━━━━━━━\n🚜 *LOCAPRANCHA*\nUSINA PITANGUEIRAS\n📊 *RELATÓRIO OPERACIONAL*\n━━━━━━━━━━━━━━━━━━\n\n`;
+    
+    let text = header;
+    text += `📅 Período: ${filters.dataInicio} ➝ ${filters.dataFim}\n`;
+    text += `👤 Responsável: ${profile?.name || profile?.nickname}\n\n`;
+    
+    text += `━━━━━━━━━━━━━━━━━━\n📊 *RESUMO*\n━━━━━━━━━━━━━━━━━━\n\n`;
+    text += `🚜 Operações: ${kpis.total}\n`;
     text += `✅ Finalizadas: ${kpis.finalizadas} (${kpis.finalizadasPercent}%)\n`;
-    text += `⏱️ Horas Operacionais: ${kpis.totalHoras}h\n`;
+    text += `🟡 Em andamento: ${kpis.emAndamento}\n`;
+    text += `🔴 Canceladas: ${kpis.canceladas} (${kpis.canceladasPercent}%)\n`;
+    text += `⏱️ Horas: ${kpis.totalHoras}h\n`;
     text += `━━━━━━━━━━━━━━━━━━\n\n`;
     
     if (filteredData.length > 0) {
-      text += `*ÚLTIMAS ATIVIDADES:*\n`;
-      filteredData.slice(0, 5).forEach(r => {
-        text += `• ${r.pranchaId} ➝ ${r.frenteId} (${r.status})\n`;
+      text += `🚜 *OPERAÇÕES*\n\n`;
+      filteredData.slice(0, 15).forEach(r => {
+        text += `${r.data} — ${r.hora || r.horarioRetirada}\n`;
+        text += `🚜 ${r.pranchaId}\n`;
+        text += `📍 ${r.origem} ➝ ${r.destino}\n`;
+        text += `✅ ${r.status.toUpperCase()}\n\n`;
       });
-      if (filteredData.length > 5) text += `_... e mais ${filteredData.length - 5} registros._\n`;
+      if (filteredData.length > 15) {
+        text += `_... e mais ${filteredData.length - 15} registros._\n\n`;
+      }
     }
     
-    text += `\n🔗 Gerado em: ${new Date().toLocaleString('pt-BR')}`;
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    text += `━━━━━━━━━━━━━━━━━━\nLOCAPRANCHA\nUsina Pitangueiras\n━━━━━━━━━━━━━━━━━━`;
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text)
+        .then(() => toast.success('Relatório copiado para o clipboard!'))
+        .catch(() => {
+          const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+          window.open(url, '_blank');
+        });
+    } else {
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
   };
+
 
   const clearFilters = () => {
     setFilters({
@@ -124,34 +154,34 @@ export function RelatorioPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-card p-6 rounded-2xl border border-primary/10 shadow-sm glass">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-            <BarChart size={28} />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-card p-4 sm:p-6 rounded-2xl border border-primary/10 shadow-sm glass">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
+            <BarChart size={24} className="sm:w-[28px] sm:h-[28px]" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight">Relatórios Operacionais</h1>
-            <p className="text-sm text-muted-foreground font-medium">Histórico, desempenho e prestação de contas das operações.</p>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">Relatórios Operacionais</h1>
+            <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">Histórico e desempenho das operações.</p>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 self-end lg:self-center">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="flex items-center gap-2 bg-background/50 p-1 rounded-lg border">
             <Input 
               type="date" 
-              className="w-40 border-none bg-transparent h-9 text-xs font-bold"
+              className="flex-1 min-w-0 border-none bg-transparent h-9 text-[10px] sm:text-xs font-bold px-1"
               value={filters.dataInicio}
               onChange={(e) => setFilters({...filters, dataInicio: e.target.value})}
             />
-            <span className="text-muted-foreground">→</span>
+            <span className="text-muted-foreground text-xs">→</span>
             <Input 
               type="date" 
-              className="w-40 border-none bg-transparent h-9 text-xs font-bold"
+              className="flex-1 min-w-0 border-none bg-transparent h-9 text-[10px] sm:text-xs font-bold px-1"
               value={filters.dataFim}
               onChange={(e) => setFilters({...filters, dataFim: e.target.value})}
             />
           </div>
-          <Button variant="outline" size="icon" className="h-11 w-11" onClick={() => toast.success('Dados atualizados')}>
+          <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 hidden sm:flex" onClick={() => toast.success('Dados atualizados')}>
             <RefreshCw size={18} />
           </Button>
         </div>
@@ -163,16 +193,17 @@ export function RelatorioPage() {
            <Button variant="outline" className="gap-2 font-bold h-11" onClick={clearFilters}>
              <X size={16} /> Limpar Filtros
            </Button>
+           <Button variant="outline" className="gap-2 font-bold h-11 border-green-500/30 text-green-600 hover:bg-green-50" onClick={shareWhatsApp}>
+             <MessageSquare size={16} /> WhatsApp
+           </Button>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2 font-bold h-11 bg-green-500/5 text-green-600 border-green-500/20 hover:bg-green-500/10" onClick={shareWhatsApp}>
-            <MessageSquare size={18} /> WhatsApp
-          </Button>
           <Button className="gap-2 font-bold h-11 cyber-nav-btn-active shadow-lg" onClick={exportPDF}>
             <FileDown size={18} /> Gerar PDF
           </Button>
         </div>
       </div>
+
 
       {/* Filters Bar */}
       <Card className="border-primary/10 glass overflow-visible">
@@ -241,27 +272,28 @@ export function RelatorioPage() {
       </Card>
 
       {/* KPI Dashboard */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-        <KPICard title="Total de Operações" value={kpis.total} icon={TrendingUp} color="blue" />
-        <KPICard title="Finalizadas" value={kpis.finalizadas} subtext={`${kpis.finalizadasPercent}% do total`} icon={CheckCircle2} color="green" />
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <KPICard title="Total Operações" value={kpis.total} icon={TrendingUp} color="blue" />
+        <KPICard title="Finalizadas" value={kpis.finalizadas} subtext={`${kpis.finalizadasPercent}%`} icon={CheckCircle2} color="green" />
         <KPICard title="Em Andamento" value={kpis.emAndamento} icon={Clock} color="orange" />
-        <KPICard title="Canceladas" value={kpis.canceladas} subtext={`${kpis.canceladasPercent}% do total`} icon={AlertCircle} color="red" />
-        <KPICard title="Horas Operacionais" value={`${kpis.totalHoras}h`} icon={Timer} color="emerald" />
-        <KPICard title="Usuários Envolvidos" value={kpis.usuariosDistintos} icon={Users} color="indigo" />
-        <KPICard title="Frotas Utilizadas" value={kpis.equipamentosDistintos} icon={Truck} color="amber" />
-        <KPICard title="Frentes Atendidas" value={kpis.frentesDistintas} icon={MapPin} color="cyan" />
+        <KPICard title="Canceladas" value={kpis.canceladas} subtext={`${kpis.canceladasPercent}%`} icon={AlertCircle} color="red" />
+        <KPICard title="Horas Totais" value={`${kpis.totalHoras}h`} icon={Timer} color="emerald" />
+        <KPICard title="Usuários" value={kpis.usuariosDistintos} icon={Users} color="indigo" />
+        <KPICard title="Frotas" value={kpis.equipamentosDistintos} icon={Truck} color="amber" />
+        <KPICard title="Frentes" value={kpis.frentesDistintas} icon={MapPin} color="cyan" />
       </div>
 
       {/* Printable Report Content */}
       <Card className="border-primary/10 glass overflow-hidden shadow-xl" ref={reportRef}>
-        <div className="p-8 space-y-8 bg-card">
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-card overflow-x-auto">
           {/* Internal Report Header */}
-          <div className="flex justify-between items-start border-b border-primary/10 pb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start border-b border-primary/10 pb-6 gap-4">
             <div className="flex items-center gap-4">
               <img 
-                src="https://usinapitangueiras.com.br/wp-content/uploads/2020/04/usina-pitangueiras-logo.png" 
+                src="/logo-pitangueiras.png" 
                 alt="Logo" 
                 className="w-16 h-16 object-contain"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
               />
               <div className="flex flex-col">
                 <span className="text-3xl font-black tracking-tighter">

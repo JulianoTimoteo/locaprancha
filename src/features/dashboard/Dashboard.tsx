@@ -69,8 +69,8 @@ export function Dashboard() {
         <p className="text-muted-foreground">Monitoramento em tempo real da frota e agendamentos.</p>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Frota Total" value={stats.total} color="text-primary" icon={<Truck className="w-5 h-5" />} />
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Frota Total" value={stats.total} color="text-primary" icon={<Truck className="w-4 h-4 sm:w-5 h-5" />} />
         <StatCard label="Disponíveis" value={stats.disponiveis} color="text-emerald-500" icon="🟢" />
         <StatCard label="Alocados" value={stats.alocadas} color="text-amber-500" icon="🟡" />
         <StatCard label="Manutenção" value={stats.oficina} color="text-rose-500" icon="🔴" />

@@ -52,7 +52,6 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
     { id: 'relatorios', label: 'Relatórios', icon: BarChart },
     { id: 'usuarios', label: 'Usuários', icon: Users },
     { id: 'auditoria', label: 'Auditoria', icon: ShieldCheck },
-    { id: 'teste_visual', label: 'Design System', icon: Palette },
   ];
 
   const filteredMenu = menuItems.filter(item => canAccessTab(profile, item.id));
@@ -66,20 +65,21 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
         "hidden lg:flex flex-col w-64 bg-card border-r transition-all duration-300",
       )}>
         <div className="p-6 flex flex-col h-full">
-          <div className="flex items-center gap-3 mb-10 group">
-            <div className="w-14 h-14 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-110">
+          <div className="flex flex-col items-center mb-10 group relative">
+            <div className="w-32 h-32 sm:w-44 sm:h-44 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 z-10">
               <img 
-                src="https://usinapitangueiras.com.br/wp-content/uploads/2020/04/usina-pitangueiras-logo.png" 
+                src="/logo-pitangueiras.png" 
                 alt="Logo Usina Pitangueiras"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain filter drop-shadow-xl"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
               />
             </div>
-            <div className="flex flex-col -space-y-1">
-              <span className="text-2xl font-black tracking-tighter transition-colors">
-                <span className="text-black dark:text-white">LOCA</span>
-                <span className="text-[#40800c]">PRANCHA</span>
-              </span>
-              <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-muted-foreground/50 ml-0.5">Enterprise System</span>
+            <div className="flex flex-col items-center -mt-8 sm:-mt-12 z-20">
+              <h1 className="font-black tracking-tighter select-none">
+                <span className="text-black dark:text-white text-2xl sm:text-3xl">LOCA</span>
+                <span className="text-[#40800c] text-2xl sm:text-3xl">PRANCHA</span>
+              </h1>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/60 mt-1">Sistema Operacional</span>
             </div>
           </div>
 
@@ -160,14 +160,14 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto pb-24 lg:pb-6 custom-scrollbar">
-          <div className="max-w-7xl mx-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto pb-24 lg:pb-6 custom-scrollbar w-full">
+          <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6 w-full">
             {children}
           </div>
         </main>
 
         {/* Bottom Navigation Mobile */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 cyber-mobile-nav border-t flex items-center justify-around h-20 px-4 pb-safe z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 cyber-mobile-nav border-t flex items-center justify-around h-16 sm:h-20 px-2 pb-safe z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
           <MobileNavItem 
             icon={LayoutDashboard} 
             label="Home" 
@@ -219,11 +219,11 @@ function MobileNavItem({ icon: Icon, label, active, onClick }: { icon: any, labe
     <button 
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-2xl transition-all cyber-nav-btn",
+        "flex flex-col items-center justify-center gap-0.5 sm:gap-1 w-14 sm:w-16 h-12 sm:h-14 rounded-xl sm:rounded-2xl transition-all cyber-nav-btn",
         active ? "cyber-nav-btn-active scale-105" : "text-muted-foreground"
       )}
     >
-      <Icon size={24} className={cn("nav-icon transition-transform", active && "scale-110")} />
+      <Icon size={20} className={cn("nav-icon transition-transform sm:w-[24px] sm:h-[24px]", active && "scale-110")} />
       <span className={cn("text-[9px] font-black uppercase tracking-widest", active ? "opacity-100" : "opacity-60")}>
         {label}
       </span>

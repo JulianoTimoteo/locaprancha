@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { Layout } from '@/components/layout/Layout';
-import { Dashboard } from '@/features/dashboard/Dashboard';
-import { FrotaList } from '@/features/frota/FrotaList';
-import { ReservaList } from '@/features/reservas/ReservaList';
-import { FrenteList } from '@/features/frentes/FrenteList';
 
-import { UsuarioList } from '@/features/usuarios/UsuarioList';
-import { RelatorioPage } from '@/features/relatorios/RelatorioPage';
-import { AuditoriaList } from '@/features/auditoria/AuditoriaList';
+// Lazy loading de módulos pesados
+const Dashboard = lazy(() => import('@/features/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
+const FrotaList = lazy(() => import('@/features/frota/FrotaList').then(m => ({ default: m.FrotaList })));
+const ReservaList = lazy(() => import('@/features/reservas/ReservaList').then(m => ({ default: m.ReservaList })));
+const FrenteList = lazy(() => import('@/features/frentes/FrenteList').then(m => ({ default: m.FrenteList })));
+const UsuarioList = lazy(() => import('@/features/usuarios/UsuarioList').then(m => ({ default: m.UsuarioList })));
+const RelatorioPage = lazy(() => import('@/features/relatorios/RelatorioPage').then(m => ({ default: m.RelatorioPage })));
+const AuditoriaList = lazy(() => import('@/features/auditoria/AuditoriaList').then(m => ({ default: m.AuditoriaList })));
 import { Toaster } from 'sonner';
 import { 
   AlertCircle
@@ -50,13 +51,14 @@ export default function App() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-background">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-2xl shadow-primary/20" />
-        <div className="text-2xl font-black tracking-tighter animate-pulse">
-          <span className="text-black dark:text-white">LOCA</span>
-          <span className="text-[#40800c]">PRANCHA</span>
+        <div className="font-black tracking-tighter animate-pulse select-none mt-4">
+          <span className="text-black dark:text-white text-3xl">LOCA</span>
+          <span className="text-[#40800c] text-3xl">PRANCHA</span>
         </div>
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest animate-pulse">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest animate-pulse mt-4">
           Carregando ambiente seguro...
         </p>
+
       </div>
     );
   }
@@ -127,14 +129,16 @@ export default function App() {
     <ErrorBoundary area="Global">
       <Layout activeView={currentView} onNavigate={handleNavigate}>
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {currentView === 'dashboard' && canAccessTab(profile, 'dashboard') && <ErrorBoundary area="Dashboard"><Dashboard /></ErrorBoundary>}
-          {currentView === 'reservas' && canAccessTab(profile, 'reservas') && <ErrorBoundary area="Reservas"><ReservaList /></ErrorBoundary>}
-          {currentView === 'pranchas' && canAccessTab(profile, 'pranchas') && <ErrorBoundary area="Frota"><FrotaList /></ErrorBoundary>}
-          
-          {currentView === 'frentes' && canAccessTab(profile, 'frentes') && <ErrorBoundary area="Frentes"><FrenteList /></ErrorBoundary>}
-          {currentView === 'relatorios' && canAccessTab(profile, 'relatorios') && <ErrorBoundary area="Relatorios"><RelatorioPage /></ErrorBoundary>}
-          {currentView === 'usuarios' && canAccessTab(profile, 'usuarios') && <ErrorBoundary area="Usuarios"><UsuarioList /></ErrorBoundary>}
-          {currentView === 'auditoria' && canAccessTab(profile, 'auditoria') && <ErrorBoundary area="Auditoria"><AuditoriaList /></ErrorBoundary>}
+          <Suspense fallback={<div className="flex items-center justify-center h-[50vh]"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+            {currentView === 'dashboard' && canAccessTab(profile, 'dashboard') && <ErrorBoundary area="Dashboard"><Dashboard /></ErrorBoundary>}
+            {currentView === 'reservas' && canAccessTab(profile, 'reservas') && <ErrorBoundary area="Reservas"><ReservaList /></ErrorBoundary>}
+            {currentView === 'pranchas' && canAccessTab(profile, 'pranchas') && <ErrorBoundary area="Frota"><FrotaList /></ErrorBoundary>}
+            
+            {currentView === 'frentes' && canAccessTab(profile, 'frentes') && <ErrorBoundary area="Frentes"><FrenteList /></ErrorBoundary>}
+            {currentView === 'relatorios' && canAccessTab(profile, 'relatorios') && <ErrorBoundary area="Relatorios"><RelatorioPage /></ErrorBoundary>}
+            {currentView === 'usuarios' && canAccessTab(profile, 'usuarios') && <ErrorBoundary area="Usuarios"><UsuarioList /></ErrorBoundary>}
+            {currentView === 'auditoria' && canAccessTab(profile, 'auditoria') && <ErrorBoundary area="Auditoria"><AuditoriaList /></ErrorBoundary>}
+          </Suspense>
           
           {/* Proteção contra rota manual ou inexistente via state */}
           {!canAccessTab(profile, currentView) && (

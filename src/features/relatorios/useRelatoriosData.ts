@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { isAdmin, isGod } from '@/lib/permissions/permissions';
 import { Reserva, Frota, Frente, UserProfile } from '@/types';
@@ -6,7 +6,6 @@ import { subscribeToAgenda } from '@/lib/firestore/agenda';
 import { subscribeToFrotas } from '@/lib/firestore/frotas';
 import { subscribeToUsuarios } from '@/lib/firestore/usuarios';
 import { subscribeToFrentes } from '@/lib/firestore/frentes';
-import { combineDateAndTime } from '@/lib/utils';
 
 export function useRelatoriosData(filters: any) {
   const { profile } = useAuth();
@@ -15,21 +14,24 @@ export function useRelatoriosData(filters: any) {
   const [usuarios, setUsuarios] = useState<UserProfile[]>([]);
   const [frentes, setFrentes] = useState<Frente[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadedCount = useRef(0);
 
   useEffect(() => {
-    const unsubAgenda = subscribeToAgenda(setAgenda);
-    const unsubFrotas = subscribeToFrotas(setFrotas);
-    const unsubUsuarios = subscribeToUsuarios(setUsuarios);
-    const unsubFrentes = subscribeToFrentes(setFrentes);
+    const checkLoaded = () => {
+      loadedCount.current += 1;
+      if (loadedCount.current >= 4) setLoading(false);
+    };
 
-    const timer = setTimeout(() => setLoading(false), 1000);
+    const unsubAgenda = subscribeToAgenda((data) => { setAgenda(data); checkLoaded(); });
+    const unsubFrotas = subscribeToFrotas((data) => { setFrotas(data); checkLoaded(); });
+    const unsubUsuarios = subscribeToUsuarios((data) => { setUsuarios(data); checkLoaded(); });
+    const unsubFrentes = subscribeToFrentes((data) => { setFrentes(data); checkLoaded(); });
 
     return () => {
       unsubAgenda();
       unsubFrotas();
       unsubUsuarios();
       unsubFrentes();
-      clearTimeout(timer);
     };
   }, []);
 

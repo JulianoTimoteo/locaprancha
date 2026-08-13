@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useFleet } from './useFleet';
 import { useAuth } from '@/features/auth/AuthContext';
 import { canManageFleet } from '@/lib/permissions/permissions';
@@ -50,19 +50,21 @@ export function FrotaList() {
 
   const canManage = canManageFleet(profile);
 
-  const filteredFrotas = frotas.filter((f: Frota) => {
-    const search = searchTerm.toLowerCase();
-    const matchesSearch = 
-      f.frota.toLowerCase().includes(search) ||
-      f.placa.toLowerCase().includes(search) ||
-      f.nome.toLowerCase().includes(search) ||
-      f.marca.toLowerCase().includes(search) ||
-      f.modelo.toLowerCase().includes(search);
-    
-    const matchesStatus = statusFilter === 'TODAS' || f.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredFrotas = useMemo(() => {
+    return frotas.filter((f: Frota) => {
+      const search = searchTerm.toLowerCase();
+      const matchesSearch = 
+        f.frota.toLowerCase().includes(search) ||
+        f.placa.toLowerCase().includes(search) ||
+        f.nome.toLowerCase().includes(search) ||
+        f.marca.toLowerCase().includes(search) ||
+        f.modelo.toLowerCase().includes(search);
+      
+      const matchesStatus = statusFilter === 'TODAS' || f.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [frotas, searchTerm, statusFilter]);
 
   const handleEdit = (frota: Frota) => {
     setFrotaToEdit(frota);
@@ -98,14 +100,14 @@ export function FrotaList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight uppercase">Gestão de Frota</h2>
-          <p className="text-muted-foreground font-medium text-sm">Controle de disponibilidade, manutenção e alocação da frota.</p>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">Gestão de Frota</h2>
+          <p className="text-muted-foreground font-medium text-xs sm:text-sm">Controle de disponibilidade e manutenção.</p>
         </div>
         
         {canManage && (
-          <Button onClick={handleNew} className="gap-2 font-black tracking-widest shadow-lg shadow-primary/20 uppercase">
+          <Button onClick={handleNew} className="w-full sm:w-auto gap-2 font-black tracking-widest shadow-lg shadow-primary/20 uppercase">
             <Plus size={18} /> NOVA FROTA
           </Button>
         )}

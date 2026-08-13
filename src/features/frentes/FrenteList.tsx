@@ -84,14 +84,14 @@ export function FrenteList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight uppercase">Frentes de Trabalho</h2>
-          <p className="text-muted-foreground font-medium text-sm">Gerenciamento de locais de operação.</p>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">Frentes de Trabalho</h2>
+          <p className="text-muted-foreground font-medium text-xs sm:text-sm">Gerenciamento de locais de operação.</p>
         </div>
         
         {isAdmin && (
-          <Button onClick={() => handleOpenForm()} className="gap-2 font-black tracking-widest shadow-lg shadow-primary/20 uppercase">
+          <Button onClick={() => handleOpenForm()} className="w-full sm:w-auto gap-2 font-black tracking-widest shadow-lg shadow-primary/20 uppercase">
             <Plus size={18} /> Nova Frente
           </Button>
         )}

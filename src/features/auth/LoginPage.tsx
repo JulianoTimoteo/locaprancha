@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { AuthLoader } from '@/components/auth/AuthLoader';
@@ -15,6 +16,16 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isReset, setIsReset] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [keepConnected, setKeepConnected] = useState(true);
+
+  // Carregar e-mail lembrado se existir
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('locaprancha_remembered_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +48,16 @@ export function LoginPage() {
         const firstDoc = snap.docs[0];
         const userData = firstDoc ? firstDoc.data() : null;
         targetEmail = userData ? userData['email'] as string : '';
+      }
+
+      // Configurar Persistência
+      await setPersistence(auth, keepConnected ? browserLocalPersistence : browserSessionPersistence);
+
+      // Lembrar e-mail
+      if (rememberMe) {
+        localStorage.setItem('locaprancha_remembered_email', email);
+      } else {
+        localStorage.removeItem('locaprancha_remembered_email');
       }
 
       // 2. Autenticação no Firebase Auth
@@ -105,23 +126,25 @@ export function LoginPage() {
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
         </div>
         
-        <div className="relative z-10 max-w-lg text-center space-y-8 animate-in fade-in slide-in-from-left-8 duration-700">
-          <div className="inline-flex items-center justify-center w-32 h-32 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl mb-4 overflow-hidden transition-all duration-500 hover:scale-105">
+        <div className="relative z-10 w-full max-w-lg mx-auto text-center flex flex-col items-center animate-in fade-in slide-in-from-left-8 duration-700">
+          <div className="w-full max-w-[320px] sm:max-w-[400px] mb-6 transition-all duration-500 hover:scale-105">
             <img 
-              src="https://usinapitangueiras.com.br/wp-content/uploads/2020/04/usina-pitangueiras-logo.png" 
+              src="/logo-pitangueiras.png" 
               alt="Logo Usina Pitangueiras"
-              className="w-full h-full object-contain p-2"
+              className="w-full h-auto object-contain filter drop-shadow-2xl"
+              onError={(e) => (e.currentTarget.style.display = 'none')}
             />
           </div>
           <div className="space-y-4">
-            <h1 className="text-6xl font-black tracking-tighter sm:text-7xl">
-              <span className="text-white">LOCA</span>
-              <span className="text-[#40800c]">PRANCHA</span>
+            <h1 className="font-black tracking-tighter select-none text-center">
+              <span className="text-white text-3xl sm:text-4xl md:text-5xl">LOCA</span>
+              <span className="text-[#40800c] text-3xl sm:text-4xl md:text-5xl">PRANCHA</span>
             </h1>
-            <p className="text-xl text-primary-foreground/80 font-medium">
+            <p className="text-lg sm:text-2xl text-primary-foreground/90 font-bold max-w-[320px] sm:max-w-none pt-4">
               Gestão inteligente e controle em tempo real para transporte de máquinas e equipamentos.
             </p>
           </div>
+
           <div className="flex justify-center gap-4 pt-4">
             <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-semibold">
               Eficiência Total
@@ -140,19 +163,21 @@ export function LoginPage() {
         </div>
 
         <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="lg:hidden flex flex-col items-center space-y-4 mb-8">
-            <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center shadow-lg p-3 overflow-hidden border border-primary/10">
+          <div className="lg:hidden flex flex-col items-center mb-8">
+            <div className="w-full max-w-[240px] mb-4">
               <img 
-                src="https://usinapitangueiras.com.br/wp-content/uploads/2020/04/usina-pitangueiras-logo.png" 
+                src="/logo-pitangueiras.png" 
                 alt="Logo Usina Pitangueiras"
-                className="w-full h-full object-contain"
+                className="w-full h-auto object-contain"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
               />
             </div>
-            <h2 className="text-4xl font-black tracking-tight">
-              <span className="text-black dark:text-white">LOCA</span>
-              <span className="text-[#40800c]">PRANCHA</span>
+            <h2 className="flex flex-col items-center font-black tracking-tight leading-[0.85] select-none">
+              <span className="text-black dark:text-white text-6xl">LOCA</span>
+              <span className="text-[#40800c] text-6xl">PRANCHA</span>
             </h2>
           </div>
+
 
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="text-3xl font-bold tracking-tight">
@@ -224,6 +249,39 @@ export function LoginPage() {
                   </div>
                 )}
               </div>
+
+              {!isReset && (
+                <div className="flex flex-col gap-3 ml-1">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="rememberMe" 
+                      checked={rememberMe} 
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <label 
+                      htmlFor="rememberMe" 
+                      className="text-xs font-bold text-foreground/70 cursor-pointer select-none"
+                    >
+                      Lembrar meu usuário
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="keepConnected" 
+                      checked={keepConnected} 
+                      onCheckedChange={(checked) => setKeepConnected(checked as boolean)}
+                      className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <label 
+                      htmlFor="keepConnected" 
+                      className="text-xs font-bold text-foreground/70 cursor-pointer select-none"
+                    >
+                      Manter-me conectado
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <Button 
                 type="submit" 
