@@ -12,10 +12,9 @@ import {
   LogOut, 
   Sun, 
   Moon,
-  HardHat,
   BarChart,
   ShieldCheck,
-  Palette
+  Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +33,7 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
   const { profile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return localStorage.getItem('theme') as 'light' | 'dark' || 'light';
@@ -167,47 +167,113 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
         </main>
 
         {/* Bottom Navigation Mobile */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 cyber-mobile-nav border-t flex items-center justify-around h-16 sm:h-20 px-2 pb-safe z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
-          <MobileNavItem 
-            icon={LayoutDashboard} 
-            label="Home" 
-            active={activeView === 'dashboard'} 
-            onClick={() => onNavigate('dashboard')} 
-          />
-          <MobileNavItem 
-            icon={Calendar} 
-            label="Agenda" 
-            active={activeView === 'reservas'} 
-            onClick={() => onNavigate('reservas')} 
-          />
-          <MobileNavItem 
-            icon={Truck} 
-            label="Frota" 
-            active={activeView === 'pranchas'} 
-            onClick={() => onNavigate('pranchas')} 
-          />
-          {canAccessTab(profile, 'relatorios') && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 cyber-mobile-nav border-t flex items-center justify-between px-2 pb-safe z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] h-20">
+          <div className="flex gap-2 flex-1">
             <MobileNavItem 
-              icon={BarChart} 
-              label="Relatórios" 
-              active={activeView === 'relatorios'} 
-              onClick={() => onNavigate('relatorios')} 
+              icon={LayoutDashboard} 
+              label="Home" 
+              active={activeView === 'dashboard'} 
+              onClick={() => {
+                onNavigate('dashboard');
+                setMobileMenuOpen(false);
+              }} 
             />
-          )}
-          {isGod(profile) && (
             <MobileNavItem 
-              icon={ShieldCheck} 
-              label="Auditoria" 
-              active={activeView === 'auditoria'} 
-              onClick={() => onNavigate('auditoria')} 
+              icon={Calendar} 
+              label="Agenda" 
+              active={activeView === 'reservas'} 
+              onClick={() => {
+                onNavigate('reservas');
+                setMobileMenuOpen(false);
+              }} 
             />
-          )}
-          <MobileNavItem 
-            icon={Users} 
-            label="Perfil" 
-            active={activeView === 'usuarios'} 
-            onClick={() => onNavigate('usuarios')} 
-          />
+            <MobileNavItem 
+              icon={Users} 
+              label="Perfil" 
+              active={activeView === 'usuarios'} 
+              onClick={() => {
+                onNavigate('usuarios');
+                setMobileMenuOpen(false);
+              }} 
+            />
+          </div>
+
+          {/* Menu Button + MAIS */}
+          <div className="relative">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-all hover:bg-accent/20 relative"
+            >
+              <Plus size={28} className="text-[#40800c] font-bold" strokeWidth={3} />
+              <span className="text-[8px] font-black uppercase tracking-tighter text-[#40800c]">MAIS</span>
+            </button>
+
+            {/* Dropdown Menu */}
+            {mobileMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-2 bg-card border border-border rounded-lg shadow-lg p-1 w-48 z-50">
+                {canAccessTab(profile, 'pranchas') && (
+                  <button
+                    onClick={() => {
+                      onNavigate('pranchas');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-3 transition-colors",
+                      activeView === 'pranchas' ? "bg-[#40800c]/20 text-[#40800c]" : "hover:bg-accent/50"
+                    )}
+                  >
+                    <Truck size={18} />
+                    Frota
+                  </button>
+                )}
+                {canAccessTab(profile, 'relatorios') && (
+                  <button
+                    onClick={() => {
+                      onNavigate('relatorios');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-3 transition-colors",
+                      activeView === 'relatorios' ? "bg-[#40800c]/20 text-[#40800c]" : "hover:bg-accent/50"
+                    )}
+                  >
+                    <BarChart size={18} />
+                    Relatórios
+                  </button>
+                )}
+                {canAccessTab(profile, 'frentes') && (
+                  <button
+                    onClick={() => {
+                      onNavigate('frentes');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-3 transition-colors",
+                      activeView === 'frentes' ? "bg-[#40800c]/20 text-[#40800c]" : "hover:bg-accent/50"
+                    )}
+                  >
+                    <MapPin size={18} />
+                    Frentes
+                  </button>
+                )}
+                {isGod(profile) && (
+                  <button
+                    onClick={() => {
+                      onNavigate('auditoria');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "w-full text-left px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-3 transition-colors",
+                      activeView === 'auditoria' ? "bg-[#40800c]/20 text-[#40800c]" : "hover:bg-accent/50"
+                    )}
+                  >
+                    <ShieldCheck size={18} />
+                    Auditoria
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </nav>
       </div>
     </div>
