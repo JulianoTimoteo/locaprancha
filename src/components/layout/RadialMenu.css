@@ -1,0 +1,185 @@
+.menu-radial-container {
+  --toggle-size: 40px;
+  --item-size: 54px;
+  --radius: min(165px, 35vw);
+  --bg-gradient: transparent;
+  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  
+  width: var(--toggle-size);
+  height: var(--toggle-size);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 70;
+}
+
+.radial-toggle-btn {
+  width: var(--toggle-size);
+  height: var(--toggle-size);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  z-index: 100;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: none;
+  box-shadow: none;
+}
+
+.dark .radial-toggle-btn {
+  background: transparent;
+}
+
+.radial-toggle-btn {
+  animation: pulse-soft 3s infinite ease-in-out;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.is-open .radial-toggle-btn {
+  transform: rotate(180deg) scale(0.9);
+  animation: none;
+  box-shadow: 0 0 15px rgba(64, 128, 12, 0.2);
+}
+
+.hidden-checkbox {
+  display: none;
+}
+
+.radial-item {
+  position: absolute;
+  list-style: none;
+  transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition-delay: calc(0.04s * var(--i));
+  transform-origin: center;
+  transform: translate(0, 0) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.is-open .radial-item {
+  --arc-size: 90deg;
+  --start-angle: -180deg;
+  --step: calc(var(--arc-size) / (var(--total) - 1));
+  --angle: calc(var(--start-angle) + (var(--step) * var(--i)));
+  
+  transform: rotate(var(--angle)) translate(var(--radius)) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.radial-anchor {
+  width: var(--item-size);
+  height: var(--item-size);
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--soft-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  
+  --arc-size: 90deg;
+  --start-angle: -180deg;
+  --step: calc(var(--arc-size) / (var(--total) - 1));
+  --angle-neg: calc(-1 * (var(--start-angle) + (var(--step) * var(--i))));
+  transform: rotate(var(--angle-neg));
+}
+
+.dark .radial-anchor {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.radial-anchor:active {
+  transform: rotate(var(--angle-neg)) scale(0.9);
+}
+
+.radial-anchor-active {
+  background: #40800c !important;
+  box-shadow: 0 0 25px rgba(64, 128, 12, 0.5);
+  transform: rotate(var(--angle-neg)) scale(1.15) !important;
+  z-index: 10;
+}
+
+.radial-icon {
+  transition: transform 0.3s ease;
+}
+
+.radial-anchor:hover .radial-icon,
+.radial-anchor-active .radial-icon {
+  transform: scale(1.1);
+}
+
+.radial-anchor::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.radial-anchor:hover::after,
+.radial-anchor-active::after {
+  border-color: #40800c;
+  transform: scale(1.05);
+}
+
+.dark .radial-anchor:hover::after,
+.dark .radial-anchor-active::after {
+  border-color: #40800c;
+}
+
+.radial-label {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 12px);
+  transform: translateY(-50%);
+  background: white;
+  color: #1e293b;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.radial-anchor:hover .radial-label {
+  opacity: 1;
+}
+
+.radial-label.opacity-100 {
+  opacity: 1;
+}
+
+.dark .radial-label {
+  background: #1e293b;
+  color: white;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Garantir que labels apareçam corretamente no hover quando aberto */
+.is-open .radial-item .radial-label {
+  display: block;
+}
+
+.radial-item:not(.is-open) .radial-label {
+  display: none;
+}

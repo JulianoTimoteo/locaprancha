@@ -12,15 +12,16 @@ import {
   LogOut, 
   Sun, 
   Moon,
+  HardHat,
   BarChart,
-  ShieldCheck,
-  Plus
+  ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { UserAccountMenu } from './UserAccountMenu';
 import { AuthLoader } from '@/components/auth/AuthLoader';
+import { RadialMenu } from './RadialMenu';
 
 
 interface LayoutProps {
@@ -33,7 +34,6 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
   const { profile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return localStorage.getItem('theme') as 'light' | 'dark' || 'light';
@@ -167,119 +167,42 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
         </main>
 
         {/* Bottom Navigation Mobile */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 cyber-mobile-nav border-t flex items-center justify-between px-2 pb-safe z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] h-20">
-          <div className="flex gap-2 flex-1">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between px-2 pb-safe z-[60] shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+          <div className="flex-1 flex justify-between items-center px-2">
             <MobileNavItem 
               icon={LayoutDashboard} 
-              label="Home" 
+              label="HOME" 
               active={activeView === 'dashboard'} 
-              onClick={() => {
-                onNavigate('dashboard');
-                setMobileMenuOpen(false);
-              }} 
+              onClick={() => onNavigate('dashboard')} 
             />
             <MobileNavItem 
               icon={Calendar} 
-              label="Agenda" 
+              label="AGENDA" 
               active={activeView === 'reservas'} 
-              onClick={() => {
-                onNavigate('reservas');
-                setMobileMenuOpen(false);
-              }} 
+              onClick={() => onNavigate('reservas')} 
             />
             <MobileNavItem 
               icon={Users} 
-              label="Perfil" 
-              active={activeView === 'usuarios'} 
-              onClick={() => {
-                onNavigate('usuarios');
-                setMobileMenuOpen(false);
-              }} 
+              label="PERFIL" 
+              active={activeView === 'perfil'} 
+              onClick={() => onNavigate('perfil')} 
             />
-          </div>
-
-          {/* Menu Button + MAIS */}
-          <div className="relative flex flex-col items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl transition-all duration-300 hover:bg-[#40800c]/10 active:scale-95 mobile-menu-btn"
-            >
-              <Plus 
-                size={32} 
-                className={cn(
-                  "text-[#40800c] transition-transform duration-300",
-                  mobileMenuOpen && "rotate-45"
-                )} 
-                strokeWidth={2.5} 
-              />
-              <span className="text-[7px] font-black uppercase tracking-tighter text-[#40800c] leading-none">MAIS</span>
-            </button>
-
-            {/* Dropdown Menu */}
-            {mobileMenuOpen && (
-              <div className="absolute bottom-full right-0 mb-3 bg-card border border-[#40800c]/30 rounded-lg shadow-[0_0_20px_rgba(64,128,12,0.2)] p-2 w-56 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                {canAccessTab(profile, 'pranchas') && (
-                  <button
-                    onClick={() => {
-                      onNavigate('pranchas');
-                      setMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      "w-full text-left px-4 py-3 rounded-md text-sm font-bold flex items-center gap-3 transition-all duration-200 hover:scale-105",
-                      activeView === 'pranchas' ? "bg-[#40800c]/25 text-[#40800c] border-l-4 border-[#40800c]" : "hover:bg-[#40800c]/10 text-foreground"
-                    )}
-                  >
-                    <Truck size={18} className="flex-shrink-0" />
-                    <span>Frota</span>
-                  </button>
-                )}
-                {canAccessTab(profile, 'relatorios') && (
-                  <button
-                    onClick={() => {
-                      onNavigate('relatorios');
-                      setMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      "w-full text-left px-4 py-3 rounded-md text-sm font-bold flex items-center gap-3 transition-all duration-200 hover:scale-105",
-                      activeView === 'relatorios' ? "bg-[#40800c]/25 text-[#40800c] border-l-4 border-[#40800c]" : "hover:bg-[#40800c]/10 text-foreground"
-                    )}
-                  >
-                    <BarChart size={18} className="flex-shrink-0" />
-                    <span>Relatórios</span>
-                  </button>
-                )}
-                {canAccessTab(profile, 'frentes') && (
-                  <button
-                    onClick={() => {
-                      onNavigate('frentes');
-                      setMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      "w-full text-left px-4 py-3 rounded-md text-sm font-bold flex items-center gap-3 transition-all duration-200 hover:scale-105",
-                      activeView === 'frentes' ? "bg-[#40800c]/25 text-[#40800c] border-l-4 border-[#40800c]" : "hover:bg-[#40800c]/10 text-foreground"
-                    )}
-                  >
-                    <MapPin size={18} className="flex-shrink-0" />
-                    <span>Frentes</span>
-                  </button>
-                )}
-                {isGod(profile) && (
-                  <button
-                    onClick={() => {
-                      onNavigate('auditoria');
-                      setMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      "w-full text-left px-4 py-3 rounded-md text-sm font-bold flex items-center gap-3 transition-all duration-200 hover:scale-105",
-                      activeView === 'auditoria' ? "bg-[#40800c]/25 text-[#40800c] border-l-4 border-[#40800c]" : "hover:bg-[#40800c]/10 text-foreground"
-                    )}
-                  >
-                    <ShieldCheck size={18} className="flex-shrink-0" />
-                    <span>Auditoria</span>
-                  </button>
-                )}
+            
+            <div className="relative z-50 flex flex-col items-center justify-center w-16">
+              <div className="flex items-center justify-center h-14 w-16">
+                <RadialMenu 
+                  items={[
+                    { id: 'pranchas', label: 'Frota', icon: Truck, active: activeView === 'pranchas', onClick: () => onNavigate('pranchas') },
+                    { id: 'relatorios', label: 'Relatórios', icon: BarChart, active: activeView === 'relatorios', onClick: () => onNavigate('relatorios'), hidden: !canAccessTab(profile, 'relatorios') },
+                    { id: 'auditoria', label: 'Auditoria', icon: ShieldCheck, active: activeView === 'auditoria', onClick: () => onNavigate('auditoria'), hidden: !isGod(profile) },
+                    { id: 'usuarios', label: 'Usuários', icon: Users, active: activeView === 'usuarios', onClick: () => onNavigate('usuarios'), hidden: !canAccessTab(profile, 'usuarios') },
+                    { id: 'frentes', label: 'Frentes', icon: MapPin, active: activeView === 'frentes', onClick: () => onNavigate('frentes'), hidden: !canAccessTab(profile, 'frentes') },
+                    { id: 'equipamentos', label: 'Equips', icon: HardHat, active: activeView === 'equipamentos', onClick: () => onNavigate('equipamentos'), hidden: !canAccessTab(profile, 'equipamentos') },
+                  ].filter(i => !i.hidden).map(({ hidden, ...rest }) => rest)}
+                />
               </div>
-            )}
+              <span className="text-[9px] font-black uppercase tracking-tighter text-[#40800c] mt-0">MAIS</span>
+            </div>
           </div>
         </nav>
       </div>
@@ -292,12 +215,12 @@ function MobileNavItem({ icon: Icon, label, active, onClick }: { icon: any, labe
     <button 
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center gap-0.5 sm:gap-1 w-14 sm:w-16 h-12 sm:h-14 rounded-xl sm:rounded-2xl transition-all cyber-nav-btn",
-        active ? "cyber-nav-btn-active scale-105" : "text-muted-foreground"
+        "flex flex-col items-center justify-center gap-1 w-16 h-14 transition-all rounded-xl",
+        active ? "bg-[#40800c]/10 text-[#40800c]" : "text-slate-400 dark:text-slate-500"
       )}
     >
-      <Icon size={20} className={cn("nav-icon transition-transform sm:w-[24px] sm:h-[24px]", active && "scale-110")} />
-      <span className={cn("text-[9px] font-black uppercase tracking-widest", active ? "opacity-100" : "opacity-60")}>
+      <Icon size={22} className={cn("transition-transform", active && "scale-110")} />
+      <span className="text-[10px] font-black uppercase tracking-widest">
         {label}
       </span>
     </button>
