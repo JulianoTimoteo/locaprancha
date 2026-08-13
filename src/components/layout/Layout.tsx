@@ -199,18 +199,25 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
           </div>
 
           {/* Menu Button + MAIS */}
-          <div className="relative">
+          <div className="relative flex flex-col items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-all hover:bg-accent/20 relative"
+              className="flex flex-col items-center justify-center gap-0.5 w-16 h-16 rounded-2xl transition-all duration-300 hover:bg-[#40800c]/10 active:scale-95 mobile-menu-btn"
             >
-              <Plus size={28} className="text-[#40800c] font-bold" strokeWidth={3} />
-              <span className="text-[8px] font-black uppercase tracking-tighter text-[#40800c]">MAIS</span>
+              <Plus 
+                size={32} 
+                className={cn(
+                  "text-[#40800c] transition-transform duration-300",
+                  mobileMenuOpen && "rotate-45"
+                )} 
+                strokeWidth={2.5} 
+              />
+              <span className="text-[7px] font-black uppercase tracking-tighter text-[#40800c] leading-none">MAIS</span>
             </button>
 
             {/* Dropdown Menu */}
             {mobileMenuOpen && (
-              <div className="absolute bottom-full right-0 mb-2 bg-card border border-border rounded-lg shadow-lg p-1 w-48 z-50">
+              <div className="absolute bottom-full right-0 mb-3 bg-card border border-[#40800c]/30 rounded-lg shadow-[0_0_20px_rgba(64,128,12,0.2)] p-2 w-56 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                 {canAccessTab(profile, 'pranchas') && (
                   <button
                     onClick={() => {
@@ -218,12 +225,12 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       setMobileMenuOpen(false);
                     }}
                     className={cn(
-                      "w-full text-left px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-3 transition-colors",
-                      activeView === 'pranchas' ? "bg-[#40800c]/20 text-[#40800c]" : "hover:bg-accent/50"
+                      "w-full text-left px-4 py-3 rounded-md text-sm font-bold flex items-center gap-3 transition-all duration-200 hover:scale-105",
+                      activeView === 'pranchas' ? "bg-[#40800c]/25 text-[#40800c] border-l-4 border-[#40800c]" : "hover:bg-[#40800c]/10 text-foreground"
                     )}
                   >
-                    <Truck size={18} />
-                    Frota
+                    <Truck size={18} className="flex-shrink-0" />
+                    <span>Frota</span>
                   </button>
                 )}
                 {canAccessTab(profile, 'relatorios') && (
@@ -233,12 +240,12 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       setMobileMenuOpen(false);
                     }}
                     className={cn(
-                      "w-full text-left px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-3 transition-colors",
-                      activeView === 'relatorios' ? "bg-[#40800c]/20 text-[#40800c]" : "hover:bg-accent/50"
+                      "w-full text-left px-4 py-3 rounded-md text-sm font-bold flex items-center gap-3 transition-all duration-200 hover:scale-105",
+                      activeView === 'relatorios' ? "bg-[#40800c]/25 text-[#40800c] border-l-4 border-[#40800c]" : "hover:bg-[#40800c]/10 text-foreground"
                     )}
                   >
-                    <BarChart size={18} />
-                    Relatórios
+                    <BarChart size={18} className="flex-shrink-0" />
+                    <span>Relatórios</span>
                   </button>
                 )}
                 {canAccessTab(profile, 'frentes') && (
@@ -248,12 +255,12 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       setMobileMenuOpen(false);
                     }}
                     className={cn(
-                      "w-full text-left px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-3 transition-colors",
-                      activeView === 'frentes' ? "bg-[#40800c]/20 text-[#40800c]" : "hover:bg-accent/50"
+                      "w-full text-left px-4 py-3 rounded-md text-sm font-bold flex items-center gap-3 transition-all duration-200 hover:scale-105",
+                      activeView === 'frentes' ? "bg-[#40800c]/25 text-[#40800c] border-l-4 border-[#40800c]" : "hover:bg-[#40800c]/10 text-foreground"
                     )}
                   >
-                    <MapPin size={18} />
-                    Frentes
+                    <MapPin size={18} className="flex-shrink-0" />
+                    <span>Frentes</span>
                   </button>
                 )}
                 {isGod(profile) && (
@@ -263,12 +270,12 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       setMobileMenuOpen(false);
                     }}
                     className={cn(
-                      "w-full text-left px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-3 transition-colors",
-                      activeView === 'auditoria' ? "bg-[#40800c]/20 text-[#40800c]" : "hover:bg-accent/50"
+                      "w-full text-left px-4 py-3 rounded-md text-sm font-bold flex items-center gap-3 transition-all duration-200 hover:scale-105",
+                      activeView === 'auditoria' ? "bg-[#40800c]/25 text-[#40800c] border-l-4 border-[#40800c]" : "hover:bg-[#40800c]/10 text-foreground"
                     )}
                   >
-                    <ShieldCheck size={18} />
-                    Auditoria
+                    <ShieldCheck size={18} className="flex-shrink-0" />
+                    <span>Auditoria</span>
                   </button>
                 )}
               </div>
