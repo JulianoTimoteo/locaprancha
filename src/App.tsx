@@ -116,17 +116,17 @@ export default function App() {
           Sincronizando ambiente seguro (v1.7.3)...
         </p>
         <div className="mt-8 opacity-0 hover:opacity-100 transition-opacity">
-           <Button 
-             variant="ghost" 
-             size="sm" 
-             className="text-[9px] uppercase font-black"
-             onClick={() => {
-               localStorage.clear();
-               window.location.reload();
-             }}
-           >
-             Reset Forçado
-           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[9px] uppercase font-black"
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+          >
+            Reset Forçado
+          </Button>
         </div>
       </div>
     );
