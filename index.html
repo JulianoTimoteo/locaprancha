@@ -159,8 +159,12 @@
               }
               window.location.href = window.location.origin + window.location.pathname + "?auto-reset=" + Date.now();
             } else {
-              const diagnosis = document.getElementById("error-diagnosis");
-              if (diagnosis) diagnosis.style.display = "block";
+              // Tentativa final automática antes de mostrar o erro
+              console.error("[ANTI-WHITE-SCREEN] Recuperação falhou. Executando reset forçado final...");
+              localStorage.clear();
+              sessionStorage.clear();
+              localStorage.removeItem("locaprancha_auto_retry");
+              window.location.href = window.location.origin + window.location.pathname + "?final-reset=" + Date.now();
             }
           } else {
             const loader = document.getElementById("emergency-loader");
