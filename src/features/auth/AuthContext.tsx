@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const loading = authLoading || profileLoading;
+  const loading = authLoading || (profileLoading && status === "LOADING");
 
   return (
     <AuthContext.Provider value={{ user, profile, status, authLoading, profileLoading, loading }}>
