@@ -55,6 +55,18 @@ export default function App() {
     return "dashboard";
   });
 
+  const handleNavigate = (view: string) => {
+    if (view === currentView) return; // Evitar navegação duplicada/loops
+
+    setCurrentView(view);
+    localStorage.setItem("locaprancha_view", view);
+
+    // Atualizar URL sem refresh (importante para GitHub Pages SPA)
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", view);
+    window.history.pushState({ view }, "", url.toString());
+  };
+
   useEffect(() => {
     const handleNav = (e: any) => {
       if (e.detail) {
@@ -79,24 +91,17 @@ export default function App() {
       window.removeEventListener("navigate", handleNav);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, []);
+  }, [currentView]); // Dependência adicionada
 
   useEffect(() => {
     if (user && profile && currentView === "dashboard") {
-      // Garantir que estamos no dashboard ao logar
-      handleNavigate(currentView || "dashboard");
+      // Garantir que estamos no dashboard ao logar se já não estivermos navegando
+      const params = new URLSearchParams(window.location.search);
+      if (!params.get("view")) {
+        handleNavigate("dashboard");
+      }
     }
-  }, [user, !!profile]);
-
-  const handleNavigate = (view: string) => {
-    setCurrentView(view);
-    localStorage.setItem("locaprancha_view", view);
-
-    // Atualizar URL sem refresh (importante para GitHub Pages SPA)
-    const url = new URL(window.location.href);
-    url.searchParams.set("view", view);
-    window.history.pushState({ view }, "", url.toString());
-  };
+  }, [user, !!profile, currentView]);
 
   if (loading && !profile) {
     return (
