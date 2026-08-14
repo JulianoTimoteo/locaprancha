@@ -36,6 +36,7 @@ export function ConnectionBanner() {
   if (!isVisible) return null;
 
   const firstName = profile?.name?.split(" ")[0] || "";
+  const isGodOrAdmin = profile && ["GOD", "ADMINISTRADOR"].includes(profile.role);
 
   return (
     <div
@@ -62,7 +63,7 @@ export function ConnectionBanner() {
         <span className="text-[11px] font-black uppercase tracking-widest text-foreground flex items-center gap-1">
           {status === "online" && <>Bem-vindo ao Locaprancha{firstName ? `! ${firstName}` : "!"}</>}
           {status === "syncing" && "Sincronizando Dados..."}
-          {status === "offline" && "Sistema Offline"}
+          {status === "offline" && "Sistema Offline (Usando Cache Local)"}
           {status === "connecting" && "Conectando ao Servidor..."}
         </span>
       </div>
