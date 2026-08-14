@@ -5,8 +5,8 @@
  * não trave em estados corrompidos (ex: rotas inexistentes, sessões expiradas).
  */
 
-const VERSION = "1.6.2";
-export const BUILD_DATE = "14/08/2026 19:07 UTC"; // Data do build fixada para verificação operacional
+const VERSION = "1.7.1";
+export const BUILD_DATE = "14/08/2026 19:47 UTC"; // Data do build fixada para verificação operacional
 
 export const initAppPersistence = () => {
   try {
