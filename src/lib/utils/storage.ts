@@ -1,31 +1,33 @@
-
 /**
  * SISTEMA ANTI-TELA BRANCA v1.3.0
- * 
+ *
  * Este módulo gerencia a persistência de dados localmente e garante que o app
  * não trave em estados corrompidos (ex: rotas inexistentes, sessões expiradas).
  */
 
-const VERSION = "1.5.0"; // Incrementado para v1.5.0 para forçar limpeza total e cache-busting
+const VERSION = "1.6.2";
+export const BUILD_DATE = "14/08/2026 19:07 UTC"; // Data do build fixada para verificação operacional
 
 export const initAppPersistence = () => {
   try {
     const lastVersion = localStorage.getItem("locaprancha_app_version");
-    
+
     // Se a versão mudou ou se for a primeira execução do dia, forçamos um reset leve
     // No entanto, se o usuário estiver reclamando de tela branca constante,
     // o reset deve ser agressivo.
     if (lastVersion !== VERSION) {
-      console.warn(`[Storage] Version mismatch: ${lastVersion} -> ${VERSION}. Executing Hard Reset...`);
-      
-      // Preservar apenas o que for estritamente necessário se quiséssemos, 
+      console.warn(
+        `[Storage] Version mismatch: ${lastVersion} -> ${VERSION}. Executing Hard Reset...`,
+      );
+
+      // Preservar apenas o que for estritamente necessário se quiséssemos,
       // mas para "Tela Branca" a regra é: LIMPEZA TOTAL.
       localStorage.clear();
       sessionStorage.clear();
-      
+
       localStorage.setItem("locaprancha_app_version", VERSION);
       console.info("[Storage] Hard Reset complete. App is clean.");
-      
+
       // Forçar recarregamento para garantir que o estado do React seja reiniciado do zero
       if (lastVersion !== null) {
         window.location.reload();
@@ -34,7 +36,11 @@ export const initAppPersistence = () => {
   } catch (error) {
     console.error("[Storage] Failed to initialize persistence:", error);
     // Em caso de erro no localStorage (ex: modo privado), tentamos limpar o que der
-    try { localStorage.clear(); } catch(e) {}
+    try {
+      localStorage.clear();
+    } catch (e) {
+      console.warn("Storage cleanup failed:", e);
+    }
   }
 };
 
