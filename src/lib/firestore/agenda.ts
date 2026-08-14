@@ -5,7 +5,6 @@ import {
   QuerySnapshot,
   DocumentData,
   where,
-  getDocs,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { Reserva } from "@/types";
@@ -27,8 +26,7 @@ export function subscribeToAgenda(
       (snapshot: QuerySnapshot<DocumentData>) => {
         const agenda = snapshot.docs.map((doc) => {
           try {
-            const normalized = normalizeAgendaRecord(doc.id, doc.data());
-            return normalized;
+            return normalizeAgendaRecord(doc.id, doc.data());
           } catch (err) {
             console.error(`[AGENDA] Erro ao normalizar doc ${doc.id}:`, err);
             return normalizeAgendaRecord(doc.id, {});
@@ -48,42 +46,31 @@ export function subscribeToAgenda(
     return () => {};
   }
 
+  // Fallback para usuários comuns: Múltiplas queries para simular OR
   const q1 = query(collection(db, "agenda"), where("solicitanteId", "==", uid));
   const q2 = query(collection(db, "agenda"), where("motoristaId", "==", uid));
   const q3 = query(collection(db, "agenda"), where("userId", "==", uid));
 
-  const seen = new Set<string>();
-  const results: Reserva[] = [];
+  const resultsMap = new Map<string, Reserva>();
 
   const emit = () => {
-    callback([...results]);
+    callback(Array.from(resultsMap.values()));
   };
 
   const processSnapshot = (snapshot: QuerySnapshot<DocumentData>) => {
-    let changed = false;
     snapshot.docs.forEach((doc) => {
-      if (seen.has(doc.id)) return;
-      seen.add(doc.id);
       try {
-        const normalized = normalizeAgendaRecord(doc.id, doc.data());
-        results.push(normalized);
-        changed = true;
+        resultsMap.set(doc.id, normalizeAgendaRecord(doc.id, doc.data()));
       } catch (err) {
         console.error(`[AGENDA] Erro ao normalizar doc ${doc.id}:`, err);
       }
     });
-    if (changed) emit();
+    emit();
   };
 
-  const unsub1 = onSnapshot(q1, processSnapshot, (error) => {
-    console.error("[AGENDA] Erro na query solicitante:", error);
-  });
-  const unsub2 = onSnapshot(q2, processSnapshot, (error) => {
-    console.error("[AGENDA] Erro na query motorista:", error);
-  });
-  const unsub3 = onSnapshot(q3, processSnapshot, (error) => {
-    console.error("[AGENDA] Erro na query userId:", error);
-  });
+  const unsub1 = onSnapshot(q1, processSnapshot);
+  const unsub2 = onSnapshot(q2, processSnapshot);
+  const unsub3 = onSnapshot(q3, processSnapshot);
 
   return () => {
     unsub1?.();
