@@ -151,7 +151,7 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     op.status || "N/A",
   ]);
 
-  (autoTable as any)(doc, {
+  (autoTable as (d: jsPDF, options: any) => void)(doc, {
     startY: currentY + 5,
     head: [["Data", "Hora", "Frota", "Frente", "Usuário", "Origem", "Destino", "Status"]],
     body: tableRows,
@@ -188,7 +188,7 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   });
 
   // Final Summary on last page
-  const finalY = (doc as any).lastAutoTable.finalY + 10; // doc as any because autoTable adds lastAutoTable property dynamically
+  const finalY = (doc as any).lastAutoTable?.finalY || currentY + 10;
 
   if (finalY < pageHeight - 40) {
     doc.setFontSize(10);
