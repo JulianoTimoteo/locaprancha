@@ -17,7 +17,7 @@ export const persistence = {
       };
       localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(payload));
     } catch (e) {
-      // ignore
+      console.warn(`[PERSISTENCE] Erro ao salvar cache para ${key}:`, e);
     }
   },
 
@@ -30,8 +30,12 @@ export const persistence = {
       if (!cached) return null;
 
       const payload = JSON.parse(cached);
+      console.info(
+        `[PERSISTENCE] Carregando cache local para ${key} (${new Date(payload.timestamp).toLocaleTimeString()})`,
+      );
       return payload.data as T;
     } catch (e) {
+      console.warn(`[PERSISTENCE] Erro ao ler cache para ${key}:`, e);
       return null;
     }
   },
