@@ -12,18 +12,10 @@ import { db } from "../firebase";
 import { UserProfile } from "@/types";
 import { normalizeUserProfile } from "./normalizers";
 
-export function subscribeToUsuarios(
-  callback: (usuarios: UserProfile[]) => void,
-  userProfile?: UserProfile | null,
-) {
-  const isAdmin =
-    userProfile && (userProfile.role === "GOD" || userProfile.role === "ADMINISTRADOR");
-
-  if (!isAdmin) {
-    callback([]);
-    return () => {};
-  }
-
+/**
+ * Escuta em tempo real a coleção de usuários
+ */
+export function subscribeToUsuarios(callback: (usuarios: UserProfile[]) => void) {
   const q = query(collection(db, "usuarios"));
 
   return onSnapshot(
@@ -36,11 +28,13 @@ export function subscribeToUsuarios(
     },
     (error) => {
       console.error("Erro ao assinar usuários:", error);
-      callback([]);
     },
   );
 }
 
+/**
+ * Busca um usuário por nickname (Apenas para verificação de existência, não identidade)
+ */
 export async function findUserByNickname(nickname: string): Promise<UserProfile | null> {
   if (!nickname) return null;
 
