@@ -131,7 +131,9 @@ export class SystemValidator {
       // 2. Read Fleet
       onProgress(20, "Lendo Frota...");
       const frotasSnap = await getDocs(collection(db, "frotas"));
-      const frotas = frotasSnap.docs.map((d) => normalizeFrota(d.id, d.data() as Record<string, any>));
+      const frotas = frotasSnap.docs.map((d) =>
+        normalizeFrota(d.id, d.data() as Record<string, unknown>),
+      );
 
       // Permitir testar com qualquer equipamento para fins de depuração do GOD.
       // Se for GOD e não houver disponíveis, pegamos o primeiro da lista.
@@ -174,7 +176,7 @@ export class SystemValidator {
         const locacaoId = await runTransaction(db, async (transaction) => {
           const fleetRef = doc(db, "frotas", this.currentPrancha!.id);
           const pSnap = await transaction.get(fleetRef);
-          const pData = pSnap.data() as Record<string, any> | undefined;
+          const pData = pSnap.data() as Record<string, unknown> | undefined;
           if (normalizeFrotaStatus(pData?.["status"]) !== "DISPONÍVEL") {
             throw new Error("Prancha ocupada durante o teste.");
           }
@@ -234,7 +236,7 @@ export class SystemValidator {
         await runTransaction(db, async (transaction) => {
           const fleetRef = doc(db, "frotas", this.currentPrancha!.id);
           const pSnap = await transaction.get(fleetRef);
-          const pData = pSnap.data() as Record<string, any> | undefined;
+          const pData = pSnap.data() as Record<string, unknown> | undefined;
           if (normalizeFrotaStatus(pData?.["status"]) !== "DISPONÍVEL") {
             throw new Error("❌ Prancha indisponível.");
           }
