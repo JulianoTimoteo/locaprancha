@@ -61,7 +61,7 @@ export default function App() {
         handleNavigate(e.detail);
       }
     };
-    
+
     const handlePopState = (e: PopStateEvent) => {
       if (e.state?.view) {
         setCurrentView(e.state.view);
@@ -74,7 +74,7 @@ export default function App() {
 
     window.addEventListener("navigate", handleNav);
     window.addEventListener("popstate", handlePopState);
-    
+
     return () => {
       window.removeEventListener("navigate", handleNav);
       window.removeEventListener("popstate", handlePopState);
@@ -91,7 +91,7 @@ export default function App() {
   const handleNavigate = (view: string) => {
     setCurrentView(view);
     localStorage.setItem("locaprancha_view", view);
-    
+
     // Atualizar URL sem refresh (importante para GitHub Pages SPA)
     const url = new URL(window.location.href);
     url.searchParams.set("view", view);
