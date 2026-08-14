@@ -13,7 +13,7 @@ import {
 /**
  * Normaliza o Role do usuário para garantir que seja um valor válido do enum UserRole
  */
-export function normalizeUserRole(role: any): UserRole {
+export function normalizeUserRole(role: unknown): UserRole {
   const validRoles: UserRole[] = ["GOD", "ADMINISTRADOR", "LIDER", "MOTORISTA", "SOLICITANTE"];
   if (validRoles.includes(role as UserRole)) {
     return role as UserRole;
@@ -24,7 +24,7 @@ export function normalizeUserRole(role: any): UserRole {
 /**
  * Normaliza uma string garantindo que nunca seja nula
  */
-export function normalizeString(val: any, fallback: string = ""): string {
+export function normalizeString(val: unknown, fallback: string = ""): string {
   if (val === null || val === undefined) return fallback;
   return String(val).trim();
 }
@@ -32,7 +32,7 @@ export function normalizeString(val: any, fallback: string = ""): string {
 /**
  * Normaliza o status da frota
  */
-export function normalizeFrotaStatus(status: any): StatusFrota {
+export function normalizeFrotaStatus(status: unknown): StatusFrota {
   const s = normalizeString(status).toUpperCase();
   if (s.includes("DISP")) return "DISPONÍVEL";
   if (s.includes("ALOC") || s.includes("OCUP")) return "ALOCADO";
@@ -43,7 +43,7 @@ export function normalizeFrotaStatus(status: any): StatusFrota {
 /**
  * Normaliza um documento de Frota
  */
-export function normalizeFrota(id: string, data: any): Frota {
+export function normalizeFrota(id: string, data: Record<string, any>): Frota {
   return {
     id,
     frota: data.frota || data.numero || id,
@@ -64,7 +64,7 @@ export function normalizeFrota(id: string, data: any): Frota {
 /**
  * Normaliza um documento de Reserva vindo do Firestore
  */
-export function normalizeReserva(id: string, data: any): Reserva {
+export function normalizeReserva(id: string, data: Record<string, any>): Reserva {
   return {
     id,
     tipoOperacao: data.tipoOperacao || "SOLICITACAO",
@@ -99,7 +99,7 @@ export function normalizeReserva(id: string, data: any): Reserva {
 /**
  * Normaliza um documento de Usuário
  */
-export function normalizeUserProfile(id: string, data: any): UserProfile {
+export function normalizeUserProfile(id: string, data: Record<string, any>): UserProfile {
   return {
     uid: id,
     name: data.name || data.displayName || "",
@@ -118,7 +118,7 @@ export function normalizeUserProfile(id: string, data: any): UserProfile {
 /**
  * Normaliza um documento de Equipamento
  */
-export function normalizeEquipamento(id: string, data: any): Equipamento {
+export function normalizeEquipamento(id: string, data: Record<string, any>): Equipamento {
   return {
     id,
     nome: data.nome || "",
@@ -132,7 +132,7 @@ export function normalizeEquipamento(id: string, data: any): Equipamento {
 /**
  * Normaliza um documento de Frente
  */
-export function normalizeFrente(id: string, data: any): Frente {
+export function normalizeFrente(id: string, data: Record<string, any>): Frente {
   return {
     id,
     nome: data.nome || "",
