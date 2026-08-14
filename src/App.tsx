@@ -113,7 +113,7 @@ export default function App() {
           <span className="text-[#40800c] text-3xl font-black">PRANCHA</span>
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest animate-pulse mt-4">
-          Sincronizando ambiente seguro...
+          Sincronizando ambiente seguro (v1.7.2)...
         </p>
       </div>
     );
