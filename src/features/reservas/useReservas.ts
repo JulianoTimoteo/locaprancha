@@ -91,7 +91,7 @@ export function useReservas() {
     }, profile);
 
     return () => unsubscribe();
-  }, [profile]);
+  }, [profile, user?.uid, sendNotification]);
 
   const addReserva = async (reservaData: Partial<Reserva>): Promise<string | undefined> => {
     if (!user || !profile) return;
