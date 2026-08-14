@@ -22,7 +22,7 @@ export function IndexPage() {
     sessionStorage.clear();
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (let registration of registrations) registration.unregister();
+        for (const registration of registrations) registration.unregister();
       });
     }
     fetch(window.location.href, { cache: "reload", mode: "no-cors" }).finally(() => {
