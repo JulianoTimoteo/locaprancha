@@ -1,29 +1,54 @@
-# Welcome to your Lovable project
+# Locaprancha - Gestão de Frota e Agendamento
 
-This project was built with [Lovable](https://lovable.dev).
+Sistema inteligente de gestão de frota e transporte de equipamentos para a Usina Pitangueiras.
 
-## Build with Lovable
+## 🚀 Stack Tecnológica
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+- **Frontend**: React 19 + Vite 8 + TypeScript
+- **Estilização**: Tailwind CSS v4 + shadcn/ui
+- **Backend**: Firebase (Authentication & Firestore)
+- **Hospedagem**: GitHub Pages
+- **CI/CD**: GitHub Actions
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+## 🔐 Segurança (Zero Trust)
 
-## Development
+O sistema implementa uma arquitetura de segurança onde a autoridade reside no servidor (Firestore Security Rules).
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+- **Identidade**: Validada via Firebase Auth.
+- **Autorização**: Baseada em Perfis (GOD, ADMINISTRADOR, LIDER, MOTORISTA, SOLICITANTE).
+- **Integridade**: Logs de auditoria imutáveis e transações atômicas para mudanças de estado.
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+## 🛠️ Desenvolvimento e Build
+
+### Variáveis de Ambiente
+
+Crie um arquivo `.env` baseado no `.env.example`:
+
+```
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
 ```
 
-## Built with
+### Comandos
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+```sh
+npm install      # Instalar dependências
+npm run dev      # Iniciar ambiente de desenvolvimento
+npm run build    # Gerar build de produção (dist/)
+npm run preview  # Testar o build localmente
+```
+
+## 📦 Deploy
+
+O deploy é automatizado via GitHub Actions. Sempre que um push é feito na branch `main`, o sistema executa:
+
+1. Lint e Typecheck
+2. Testes automatizados
+3. Build de produção
+4. Upload para o GitHub Pages
+
+URL de Produção: [https://julianotimoteo.github.io/locaprancha/](https://julianotimoteo.github.io/locaprancha/)

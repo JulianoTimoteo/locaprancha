@@ -1,6 +1,16 @@
-import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { logAction } from '@/lib/audit';
+import { auth, db } from "@/lib/firebase";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+} from "firebase/firestore";
+import { logAction } from "@/lib/audit";
 
 /**
  * Procura um perfil operacional órfão pelo e-mail do usuário autenticado.
@@ -12,7 +22,7 @@ export async function autoMigrateProfile(authUser: any): Promise<boolean> {
 
   try {
     // 1. Verificar se já existe o documento correto (ID == UID)
-    const exactDocRef = doc(db, 'usuarios', authUser.uid);
+    const exactDocRef = doc(db, "usuarios", authUser.uid);
     const exactDocSnap = await getDoc(exactDocRef);
 
     if (exactDocSnap.exists()) {
@@ -21,13 +31,13 @@ export async function autoMigrateProfile(authUser: any): Promise<boolean> {
 
     // 2. Procurar por um perfil que tenha o e-mail mas ID diferente (ex: nickname)
     const q = query(
-      collection(db, 'usuarios'), 
-      where('email', '==', authUser.email.toLowerCase().trim()),
-      limit(1)
+      collection(db, "usuarios"),
+      where("email", "==", authUser.email.toLowerCase().trim()),
+      limit(1),
     );
-    
+
     const snap = await getDocs(q);
-    
+
     if (!snap.empty && snap.docs[0]) {
       const oldDoc = snap.docs[0];
       const oldData = oldDoc.data();
@@ -35,29 +45,28 @@ export async function autoMigrateProfile(authUser: any): Promise<boolean> {
 
       if (oldId === authUser.uid) return true;
 
-      console.log(`[AUTO-MIGRATION] Migrando perfil de ${oldId} para ${authUser.uid}`);
-
       // 3. Criar o novo documento com ID = UID
       const newData = {
         ...oldData,
         uid: authUser.uid,
         atualizadoEm: serverTimestamp(),
-        ultimoAcesso: serverTimestamp()
+        ultimoAcesso: serverTimestamp(),
       };
 
       await setDoc(exactDocRef, newData);
 
       // 4. Registrar a migração
-      const displayName = (oldData['nickname'] as string) || (oldData['name'] as string) || authUser.email;
-      
+      const displayName =
+        (oldData["nickname"] as string) || (oldData["name"] as string) || authUser.email;
+
       await logAction(
-        authUser.uid, 
-        displayName, 
-        'USUARIO_MIGRADO', 
-        'USUARIO', 
-        oldId, 
-        { oldId }, 
-        { newUid: authUser.uid }
+        authUser.uid,
+        displayName,
+        "MIGRATE_USER",
+        "USUARIO",
+        oldId,
+        { oldId },
+        { newUid: authUser.uid },
       );
 
       return true;

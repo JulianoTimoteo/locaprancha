@@ -4,7 +4,7 @@
   --radius: min(165px, 35vw);
   --bg-gradient: transparent;
   --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  
+
   width: var(--toggle-size);
   height: var(--toggle-size);
   position: relative;
@@ -38,8 +38,13 @@
 }
 
 @keyframes pulse-soft {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .is-open .radial-toggle-btn {
@@ -64,11 +69,11 @@
 }
 
 .is-open .radial-item {
-  --arc-size: 90deg;
+  --arc-size: 110deg;
   --start-angle: -180deg;
   --step: calc(var(--arc-size) / (var(--total) - 1));
   --angle: calc(var(--start-angle) + (var(--step) * var(--i)));
-  
+
   transform: rotate(var(--angle)) translate(var(--radius)) scale(1);
   opacity: 1;
   pointer-events: auto;
@@ -87,8 +92,8 @@
   box-shadow: var(--soft-shadow);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  
-  --arc-size: 90deg;
+
+  --arc-size: 110deg;
   --start-angle: -180deg;
   --step: calc(var(--arc-size) / (var(--total) - 1));
   --angle-neg: calc(-1 * (var(--start-angle) + (var(--step) * var(--i))));
@@ -121,7 +126,7 @@
 }
 
 .radial-anchor::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: -4px;
   border-radius: 50%;
@@ -154,7 +159,7 @@
   font-weight: 800;
   text-transform: uppercase;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 0, 0, 0.05);
   pointer-events: none;
   opacity: 0;

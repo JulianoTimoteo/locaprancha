@@ -1,6 +1,6 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCcw } from "lucide-react";
 
 interface Props {
   children?: ReactNode;
@@ -21,9 +21,8 @@ export class ErrorBoundary extends Component<Props, State> {
     super(props);
     this.state = {
       hasError: false,
-      error: undefined
+      error: undefined,
     };
-
   }
 
   public static getDerivedStateFromError(error: Error): State {
@@ -36,7 +35,6 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleReset = () => {
     this.setState({ hasError: false, error: undefined });
-    window.location.reload();
   };
 
   public override render() {
@@ -48,13 +46,14 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="bg-amber-50 p-6 rounded-full">
             <AlertTriangle className="w-16 h-16 text-amber-500" />
           </div>
-          
+
           <div className="space-y-2">
             <h2 className="text-2xl font-black tracking-tight text-foreground uppercase">
-              ⚠️ Não foi possível carregar {this.props.area ? `esta área (${this.props.area})` : 'esta área'}
+              ⚠️ Não foi possível carregar{" "}
+              {this.props.area ? `esta área (${this.props.area})` : "esta área"}
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto font-medium">
-              Ocorreu uma falha na renderização ou no processamento de dados. 
+              Ocorreu uma falha na renderização ou no processamento de dados.
               {import.meta.env.DEV && this.state.error && (
                 <span className="block mt-2 text-xs font-mono bg-muted p-2 rounded text-left overflow-auto max-h-32">
                   {this.state.error.message}
@@ -63,7 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
           </div>
 
-          <Button 
+          <Button
             onClick={this.handleReset}
             className="gap-2 font-bold shadow-lg shadow-primary/20"
           >

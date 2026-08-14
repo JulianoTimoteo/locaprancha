@@ -1,10 +1,10 @@
-import React from 'react';
+import React from "react";
 
 interface AuthLoaderProps {
   message?: string;
 }
 
-export function AuthLoader({ message = 'Iniciando...' }: AuthLoaderProps) {
+export function AuthLoader({ message = "Iniciando..." }: AuthLoaderProps) {
   return (
     <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm animate-in fade-in duration-300">
       <style>{`
@@ -37,22 +37,23 @@ export function AuthLoader({ message = 'Iniciando...' }: AuthLoaderProps) {
         .load-inner.load-one {
           left: 0%;
           top: 0%;
-          border-bottom: 3px solid #5c5edc;
+          border-bottom: 3px solid #40800c;
           animation: rotate1 1.15s linear infinite;
         }
 
         .load-inner.load-two {
           right: 0%;
           top: 0%;
-          border-right: 3px solid #9147ff;
+          border-right: 3px solid #40800c;
           animation: rotate2 1.15s 0.1s linear infinite;
         }
 
         .load-inner.load-three {
           right: 0%;
           bottom: 0%;
-          border-top: 3px solid #3b82f6;
+          border-top: 3px solid #000000;
           animation: rotate3 1.15s 0.15s linear infinite;
+
         }
 
         @keyframes rotate1 {

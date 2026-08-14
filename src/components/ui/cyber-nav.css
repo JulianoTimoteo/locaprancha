@@ -1,58 +1,72 @@
-
 .cyber-nav-btn {
   position: relative;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   backdrop-filter: blur(8px);
   border: 1px solid transparent;
 }
 
+/* Efeito de brilho ao passar o mouse */
 .cyber-nav-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
-  transition: 0.5s;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: 0.6s;
 }
 
 .dark .cyber-nav-btn::before {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(0, 255, 255, 0.1),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
 }
 
 .cyber-nav-btn:hover::before {
   left: 100%;
 }
 
+/* Indicador de transição deslizante */
+.cyber-nav-btn::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  opacity: 0;
+}
+
+.cyber-nav-btn-active::after {
+  width: 100%;
+  left: 0;
+  opacity: 1;
+}
+
 .cyber-nav-btn-active {
-  background: rgba(64, 128, 12, 0.1) !important;
+  background: rgba(64, 128, 12, 0.12) !important;
   border-color: rgba(64, 128, 12, 0.3) !important;
-  box-shadow: 0 0 15px rgba(64, 128, 12, 0.15),
-              inset 0 0 10px rgba(64, 128, 12, 0.1);
+  box-shadow:
+    0 4px 15px rgba(64, 128, 12, 0.15),
+    inset 0 0 10px rgba(64, 128, 12, 0.05);
   color: #40800c !important;
+  transform: translateY(-2px);
 }
 
 .cyber-nav-btn-active .nav-icon {
   color: #40800c !important;
+  transform: scale(1.1);
+  transition: transform 0.3s ease;
 }
 
 .dark .cyber-nav-btn-active {
-  background: rgba(0, 255, 255, 0.05) !important;
-  border-color: rgba(0, 255, 255, 0.3) !important;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.15),
-              inset 0 0 15px rgba(0, 255, 255, 0.1);
+  background: rgba(0, 255, 255, 0.08) !important;
+  border-color: rgba(0, 255, 255, 0.4) !important;
+  box-shadow:
+    0 4px 20px rgba(0, 255, 255, 0.2),
+    inset 0 0 15px rgba(0, 255, 255, 0.1);
   color: #00ffff !important;
 }
 
@@ -63,85 +77,18 @@
 
 /* Glassmorphism for mobile nav */
 .cyber-mobile-nav {
-  backdrop-filter: blur(12px);
-  background: rgba(var(--card-rgb), 0.8) !important;
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.7) !important;
 }
 
 .dark .cyber-mobile-nav {
-  background: rgba(15, 23, 42, 0.8) !important;
-  border-top: 1px solid rgba(0, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-top: 1px solid rgba(0, 255, 255, 0.15);
 }
 
-/* Mobile Menu Button */
-.mobile-menu-btn {
-  position: relative;
-  overflow: hidden;
-  border: 2px solid rgba(64, 128, 12, 0.3);
-  backdrop-filter: blur(8px);
-}
-
-.mobile-menu-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(64, 128, 12, 0.2), transparent);
-  transition: left 0.6s ease;
-}
-
-.mobile-menu-btn:hover::before {
-  left: 100%;
-}
-
-.mobile-menu-btn:hover {
-  border-color: rgba(64, 128, 12, 0.6) !important;
-  box-shadow: 0 0 12px rgba(64, 128, 12, 0.2) !important;
-}
-
-.dark .mobile-menu-btn {
-  border-color: rgba(0, 255, 255, 0.2);
-}
-
-.dark .mobile-menu-btn::before {
-  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.15), transparent);
-}
-
-.dark .mobile-menu-btn:hover {
-  border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
-}
-
-/* Dropdown Menu Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideInFromBottom {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-in {
-  animation: slideInFromBottom 0.2s ease-out;
-}
-
-.fade-in {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.slide-in-from-bottom-2 {
-  animation: slideInFromBottom 0.2s ease-out;
+/* Animação suave para os botões mobile */
+.lg\:hidden .cyber-nav-btn {
+  transition:
+    transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    background 0.3s ease;
 }

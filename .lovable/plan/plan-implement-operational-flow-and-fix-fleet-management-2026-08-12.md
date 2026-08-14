@@ -13,20 +13,24 @@ Implement the full operational flow for service requests (approval, execution, c
 ## Proposed Changes
 
 ### 1. Data Layer (Firestore & Hooks)
+
 - Refactor `useFleet.ts` to use the `frotas` collection (matching `PranchaList.tsx` expectations) instead of `fleet`.
 - Implement atomic operations for service state transitions (e.g., updating both `reserva` status and `equipamento` status).
 - Update `useReservas.ts` to include "Iniciar" and "Encerrar" service logic.
 
 ### 2. Operational Flow (UI)
+
 - **Agenda/Reservas**: Add action buttons to service cards: "ACEITAR", "RECUSAR" (Admins), "INICIAR", "ENCERRAR" (Admins/Motoristas).
 - **Service Report**: Implement a modal form for closing services, capturing end time and observations.
 - **Workshop Flow**: Add workshop management to equipment cards.
 
 ### 3. Real-time Synchronization
+
 - Ensure `onSnapshot()` is used for all operational collections.
 - Implement real-time counts for the Dashboard KPIs.
 
 ### 4. Technical Hardening
+
 - Update `firestore.rules` (as reference for the user) to enforce state machine transitions.
 - Implement unified normalization for all entities to prevent runtime errors from inconsistent data.
 

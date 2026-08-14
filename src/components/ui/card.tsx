@@ -20,15 +20,19 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardHeader.displayName = "CardHeader";
 
-const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
+const CardTitle = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { tag?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "div" }
+>(({ className, tag: Tag = "div", ...props }, ref) => {
+  const Component = Tag as any;
+  return (
+    <Component
       ref={ref}
       className={cn("font-semibold leading-none tracking-tight", className)}
       {...props}
     />
-  ),
-);
+  );
+});
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(

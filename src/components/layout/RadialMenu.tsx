@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { cn } from '@/lib/utils';
-import { X } from 'lucide-react';
-import './RadialMenu.css';
+import React, { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { X, BarChart3 } from "lucide-react";
+import "./RadialMenu.css";
 
 interface RadialMenuProps {
   items: {
@@ -27,10 +27,10 @@ export function RadialMenu({ items }: RadialMenuProps) {
       }
     }
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
 
@@ -43,15 +43,17 @@ export function RadialMenu({ items }: RadialMenuProps) {
     // Usar elementFromPoint para detectar colisão com os itens
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!element) return;
-    
+
     // Encontrar qual botão está sob o dedo (ou seus filhos como o ícone)
-    const index = itemsRefs.current.findIndex(ref => ref && (ref === element || ref.contains(element)));
-    
+    const index = itemsRefs.current.findIndex(
+      (ref) => ref && (ref === element || ref.contains(element)),
+    );
+
     if (index !== -1 && index !== hoveredIndex) {
       setHoveredIndex(index);
-      
+
       // Feedback tátil se disponível
-      if ('vibrate' in navigator) {
+      if ("vibrate" in navigator) {
         navigator.vibrate(10);
       }
     }
@@ -71,49 +73,57 @@ export function RadialMenu({ items }: RadialMenuProps) {
   };
 
   return (
-    <div 
-      className="relative flex items-center justify-center" 
+    <div
+      className="relative flex items-center justify-center"
       ref={menuRef}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* Backdrop para foco quando o menu estiver aberto */}
-      <div 
+      <div
         className={cn(
           "fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[65] transition-opacity duration-300 lg:hidden",
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
         onClick={() => setIsOpen(false)}
       />
 
       <aside className={cn("menu-radial-container", isOpen && "is-open")}>
-        <input 
-          type="checkbox" 
-          id="radial-toggle" 
-          className="hidden-checkbox" 
+        <input
+          type="checkbox"
+          id="radial-toggle"
+          className="hidden-checkbox"
           checked={isOpen}
           onChange={toggleMenu}
         />
-        
+
         {/* Botão de Toggle - Círculo com + no meio, sem preenchimento, animação de pulso suave */}
-        <label htmlFor="radial-toggle" className="radial-toggle-btn relative">
+        <label
+          htmlFor="radial-toggle"
+          className="radial-toggle-btn relative"
+          aria-label={isOpen ? "Fechar menu de opções" : "Abrir menu de opções"}
+        >
           <div className="relative w-full h-full flex items-center justify-center">
             {isOpen ? (
               <X className="text-primary w-8 h-8 animate-in zoom-in duration-300" />
             ) : (
-              <span className="text-primary text-6xl font-light leading-none flex items-center justify-center">+</span>
+              <span className="text-primary text-6xl font-light leading-none flex items-center justify-center">
+                +
+              </span>
             )}
           </div>
         </label>
-        
+
         {items.map((item, index) => (
-          <li 
-            key={item.id} 
-            className="radial-item" 
-            style={{ '--i': index, '--total': items.length } as React.CSSProperties}
+          <li
+            key={item.id}
+            className="radial-item"
+            style={{ "--i": index, "--total": items.length } as React.CSSProperties}
           >
             <button
-              ref={(el) => { itemsRefs.current[index] = el; }}
+              ref={(el) => {
+                itemsRefs.current[index] = el;
+              }}
               onClick={() => {
                 item.onClick();
                 setIsOpen(false);
@@ -122,13 +132,20 @@ export function RadialMenu({ items }: RadialMenuProps) {
               onMouseLeave={() => setHoveredIndex(null)}
               className={cn(
                 "radial-anchor group",
-                (item.active || hoveredIndex === index) && "radial-anchor-active"
+                (item.active || hoveredIndex === index) && "radial-anchor-active",
               )}
               title={item.label}
+              aria-label={`Navegar para ${item.label}`}
             >
-              <item.icon size={22} className={cn("radial-icon", (item.active || hoveredIndex === index) ? "text-white" : "text-primary")} />
+              <item.icon
+                size={22}
+                className={cn(
+                  "radial-icon",
+                  item.active || hoveredIndex === index ? "text-white" : "text-primary",
+                )}
+              />
               <span className={cn("radial-label", hoveredIndex === index && "opacity-100")}>
-                {item.id === 'usuarios' ? 'Gestão de Usuários' : item.label}
+                {item.id === "usuarios" ? "Gestão de Usuários" : item.label}
               </span>
             </button>
           </li>

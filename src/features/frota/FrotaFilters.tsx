@@ -1,22 +1,22 @@
-import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
-import { StatusFrota } from '@/types';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
+import { StatusFrota } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface FrotaFiltersProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  statusFilter: StatusFrota | 'TODAS';
-  onStatusFilterChange: (status: StatusFrota | 'TODAS') => void;
+  statusFilter: StatusFrota | "TODAS";
+  onStatusFilterChange: (status: StatusFrota | "TODAS") => void;
 }
 
-export function FrotaFilters({ 
-  searchTerm, 
-  onSearchChange, 
-  statusFilter, 
-  onStatusFilterChange 
+export function FrotaFilters({
+  searchTerm,
+  onSearchChange,
+  statusFilter,
+  onStatusFilterChange,
 }: FrotaFiltersProps) {
   return (
     <div className="space-y-4">
@@ -28,49 +28,60 @@ export function FrotaFilters({
             className="pl-9 font-medium"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
+            aria-label="Buscar frota, placa ou equipamento"
           />
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button 
-          variant={statusFilter === 'TODAS' ? 'default' : 'outline'} 
+        <Button
+          variant={statusFilter === "TODAS" ? "default" : "outline"}
           size="sm"
           className="font-black text-[10px] uppercase tracking-widest"
-          onClick={() => onStatusFilterChange('TODAS')}
+          onClick={() => onStatusFilterChange("TODAS")}
+          aria-label="Mostrar todas as frotas"
         >
           TODAS
         </Button>
-        <Button 
-          variant={statusFilter === 'DISPONÍVEL' ? 'default' : 'outline'} 
+        <Button
+          variant={statusFilter === "DISPONÍVEL" ? "default" : "outline"}
           size="sm"
           className={cn(
             "font-black text-[10px] uppercase tracking-widest",
-            statusFilter === 'DISPONÍVEL' ? "bg-green-600 hover:bg-green-700" : "border-green-500 text-green-600"
+            statusFilter === "DISPONÍVEL"
+              ? "bg-green-600 hover:bg-green-700"
+              : "border-green-500 text-green-600",
           )}
-          onClick={() => onStatusFilterChange('DISPONÍVEL')}
+          onClick={() => onStatusFilterChange("DISPONÍVEL")}
+          aria-label="Filtrar por frotas disponíveis"
         >
           🟢 DISPONÍVEIS
         </Button>
-        <Button 
-          variant={statusFilter === 'ALOCADO' ? 'default' : 'outline'} 
+        <Button
+          variant={statusFilter === "ALOCADO" ? "default" : "outline"}
           size="sm"
           className={cn(
             "font-black text-[10px] uppercase tracking-widest",
-            statusFilter === 'ALOCADO' ? "bg-yellow-600 hover:bg-yellow-700" : "border-yellow-500 text-yellow-600"
+            statusFilter === "ALOCADO"
+              ? "bg-yellow-600 hover:bg-yellow-700"
+              : "border-yellow-500 text-yellow-600",
           )}
-          onClick={() => onStatusFilterChange('ALOCADO')}
+          onClick={() => onStatusFilterChange("ALOCADO")}
+          aria-label="Filtrar por frotas alocadas"
         >
           🟡 ALOCADOS
         </Button>
-        <Button 
-          variant={statusFilter === 'OFICINA' ? 'default' : 'outline'} 
+        <Button
+          variant={statusFilter === "OFICINA" ? "default" : "outline"}
           size="sm"
           className={cn(
             "font-black text-[10px] uppercase tracking-widest",
-            statusFilter === 'OFICINA' ? "bg-red-600 hover:bg-red-700" : "border-red-500 text-red-600"
+            statusFilter === "OFICINA"
+              ? "bg-red-600 hover:bg-red-700"
+              : "border-red-500 text-red-600",
           )}
-          onClick={() => onStatusFilterChange('OFICINA')}
+          onClick={() => onStatusFilterChange("OFICINA")}
+          aria-label="Filtrar por frotas em oficina"
         >
           🔴 OFICINA
         </Button>

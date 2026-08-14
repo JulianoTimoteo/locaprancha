@@ -1,18 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
-import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
-import { AuthLoader } from '@/components/auth/AuthLoader';
-import { autoMigrateProfile } from '@/lib/firestore/migration';
+import React, { useState, useEffect } from "react";
+import { auth, db } from "@/lib/firebase";
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+} from "firebase/firestore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import { Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { AuthLoader } from "@/components/auth/AuthLoader";
+import logoAsset from "@/assets/logo-pitangueiras.png.asset.json";
+import { autoMigrateProfile } from "@/lib/firestore/migration";
 
 export function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isReset, setIsReset] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +38,7 @@ export function LoginPage() {
 
   // Carregar e-mail lembrado se existir
   useEffect(() => {
-    const savedEmail = localStorage.getItem('locaprancha_remembered_email');
+    const savedEmail = localStorage.getItem("locaprancha_remembered_email");
     if (savedEmail) {
       setEmail(savedEmail);
     }
@@ -35,51 +52,62 @@ export function LoginPage() {
       let targetEmail = email;
 
       // 1. Resolver Nickname para E-mail (Mecanismo de Conveniência)
-      if (!email.includes('@')) {
-        const q = query(collection(db, 'usuarios'), where('nickname', '==', email.toLowerCase()), limit(1));
+      if (!email.includes("@")) {
+        const q = query(
+          collection(db, "usuarios"),
+          where("nickname", "==", email.toLowerCase()),
+          limit(1),
+        );
         const snap = await getDocs(q);
-        
+
         if (snap.empty) {
-          toast.error('Usuário ou senha inválidos.');
+          toast.error("Usuário ou senha inválidos.");
           setLoading(false);
           return;
         }
-        
+
         const firstDoc = snap.docs[0];
         const userData = firstDoc ? firstDoc.data() : null;
-        targetEmail = userData ? userData['email'] as string : '';
+        targetEmail = userData ? (userData["email"] as string) : "";
       }
 
       // Configurar Persistência
-      await setPersistence(auth, keepConnected ? browserLocalPersistence : browserSessionPersistence);
+      await setPersistence(
+        auth,
+        keepConnected ? browserLocalPersistence : browserSessionPersistence,
+      );
 
       // Lembrar e-mail
       if (rememberMe) {
-        localStorage.setItem('locaprancha_remembered_email', email);
+        localStorage.setItem("locaprancha_remembered_email", email);
       } else {
-        localStorage.removeItem('locaprancha_remembered_email');
+        localStorage.removeItem("locaprancha_remembered_email");
       }
 
       // 2. Autenticação no Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, targetEmail, password);
       const user = userCredential.user;
-      
+
       // 3. Auto-Migração / Auto-Vínculo (Instrução: Criar automaticamente)
       // Se o perfil existir com ID antigo mas mesmo email, ele é migrado para usuarios/{UID}
       await autoMigrateProfile(user);
-      
+
       // 4. Registro de Último Acesso (Respeitando a Regra de Identidade usuarios/{UID})
-      const userDocRef = doc(db, 'usuarios', user.uid);
-      await setDoc(userDocRef, { 
-        ultimoAcesso: serverTimestamp(),
-        uid: user.uid,
-        email: user.email
-      }, { merge: true });
-      
-      toast.success('Bem-vindo ao Locaprancha!');
+      const userDocRef = doc(db, "usuarios", user.uid);
+      await setDoc(
+        userDocRef,
+        {
+          ultimoAcesso: serverTimestamp(),
+          uid: user.uid,
+          email: user.email,
+        },
+        { merge: true },
+      );
+
+      toast.success("Bem-vindo ao Locaprancha!");
     } catch (error: any) {
       console.error("Erro no login:", error);
-      toast.error('Usuário ou senha inválidos.');
+      toast.error("Usuário ou senha inválidos.");
       setLoading(false);
     }
   };
@@ -91,26 +119,30 @@ export function LoginPage() {
     try {
       let targetEmail = email;
 
-      if (!email.includes('@')) {
-        const q = query(collection(db, 'usuarios'), where('nickname', '==', email.toLowerCase()), limit(1));
+      if (!email.includes("@")) {
+        const q = query(
+          collection(db, "usuarios"),
+          where("nickname", "==", email.toLowerCase()),
+          limit(1),
+        );
         const snap = await getDocs(q);
-        
+
         if (snap.empty) {
-          toast.error('Usuário não encontrado.');
+          toast.error("Usuário não encontrado.");
           setLoading(false);
           return;
         }
-        
+
         const firstDocReset = snap.docs[0];
         const userDataReset = firstDocReset ? firstDocReset.data() : null;
-        targetEmail = userDataReset ? userDataReset['email'] as string : '';
+        targetEmail = userDataReset ? (userDataReset["email"] as string) : "";
       }
 
       await sendPasswordResetEmail(auth, targetEmail);
-      toast.success('E-mail de recuperação enviado para o endereço cadastrado!');
+      toast.success("E-mail de recuperação enviado para o endereço cadastrado!");
       setIsReset(false);
     } catch (error: any) {
-      toast.error('Erro ao enviar e-mail: ' + error.message);
+      toast.error("Erro ao enviar e-mail: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -118,21 +150,21 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex overflow-hidden bg-background">
-      {loading && <AuthLoader message={isReset ? 'Enviando...' : 'Iniciando...'} />}
-      
+      {loading && <AuthLoader message={isReset ? "Enviando..." : "Iniciando..."} />}
+
       <div className="hidden lg:flex lg:w-1/2 relative bg-primary items-center justify-center p-12 text-primary-foreground overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
         </div>
-        
+
         <div className="relative z-10 w-full max-w-lg mx-auto text-center flex flex-col items-center animate-in fade-in slide-in-from-left-8 duration-700">
           <div className="w-full max-w-[320px] sm:max-w-[400px] mb-6 transition-all duration-500 hover:scale-105">
-            <img 
-              src="/logo-pitangueiras.png" 
+            <img
+              src={logoAsset.url}
               alt="Logo Usina Pitangueiras"
               className="w-full h-auto object-contain filter drop-shadow-2xl"
-              onError={(e) => (e.currentTarget.style.display = 'none')}
+              onError={(e) => (e.currentTarget.style.display = "none")}
             />
           </div>
           <div className="space-y-4">
@@ -140,8 +172,10 @@ export function LoginPage() {
               <span className="text-white text-3xl sm:text-4xl md:text-5xl">LOCA</span>
               <span className="text-[#40800c] text-3xl sm:text-4xl md:text-5xl">PRANCHA</span>
             </h1>
+
             <p className="text-lg sm:text-2xl text-primary-foreground/90 font-bold max-w-[320px] sm:max-w-none pt-4">
-              Gestão inteligente e controle em tempo real para transporte de máquinas e equipamentos.
+              Gestão inteligente e controle em tempo real para transporte de máquinas e
+              equipamentos.
             </p>
           </div>
 
@@ -165,28 +199,27 @@ export function LoginPage() {
         <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="lg:hidden flex flex-col items-center mb-8">
             <div className="w-full max-w-[240px] mb-4">
-              <img 
-                src="/logo-pitangueiras.png" 
+              <img
+                src={logoAsset.url}
                 alt="Logo Usina Pitangueiras"
                 className="w-full h-auto object-contain"
-                onError={(e) => (e.currentTarget.style.display = 'none')}
+                onError={(e) => (e.currentTarget.style.display = "none")}
               />
             </div>
-            <h2 className="flex flex-col items-center font-black tracking-tight leading-[0.85] select-none">
+            <h1 className="flex flex-col items-center font-black tracking-tight leading-[0.85] select-none">
               <span className="text-black dark:text-white text-6xl">LOCA</span>
               <span className="text-[#40800c] text-6xl">PRANCHA</span>
-            </h2>
+            </h1>
           </div>
-
 
           <div className="space-y-2 text-center lg:text-left">
             <h2 className="text-3xl font-bold tracking-tight">
-              {isReset ? 'Recuperar Senha' : 'Bem-vindo de volta'}
+              {isReset ? "Recuperar Senha" : "Bem-vindo de volta"}
             </h2>
             <p className="text-muted-foreground font-medium">
-              {isReset 
-                ? 'Enviaremos um link de recuperação para seu e-mail.' 
-                : 'Insira suas credenciais para gerenciar sua frota.'}
+              {isReset
+                ? "Enviaremos um link de recuperação para seu e-mail."
+                : "Insira suas credenciais para gerenciar sua frota."}
             </p>
           </div>
 
@@ -201,11 +234,11 @@ export function LoginPage() {
                     <div className="absolute inset-y-0 left-3 flex items-center text-muted-foreground group-focus-within:text-primary transition-colors">
                       <Mail size={18} />
                     </div>
-                    <Input 
-                      type="text" 
-                      placeholder="E-mail ou Nickname" 
+                    <Input
+                      type="text"
+                      placeholder="E-mail ou Nickname"
                       className="pl-10 h-12 bg-muted/50 border-muted-foreground/20 focus:bg-background transition-all"
-                      required 
+                      required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -215,11 +248,9 @@ export function LoginPage() {
                 {!isReset && (
                   <div className="space-y-2">
                     <div className="flex justify-between items-center ml-1">
-                      <label className="text-sm font-semibold text-foreground/80">
-                        Senha
-                      </label>
-                      <button 
-                        type="button" 
+                      <label className="text-sm font-semibold text-foreground/80">Senha</label>
+                      <button
+                        type="button"
                         onClick={() => setIsReset(true)}
                         className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
                       >
@@ -230,11 +261,11 @@ export function LoginPage() {
                       <div className="absolute inset-y-0 left-3 flex items-center text-muted-foreground group-focus-within:text-primary transition-colors">
                         <Lock size={18} />
                       </div>
-                      <Input 
-                        type={showPassword ? "text" : "password"} 
+                      <Input
+                        type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         className="pl-10 pr-10 h-12 bg-muted/50 border-muted-foreground/20 focus:bg-background transition-all"
-                        required 
+                        required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
@@ -242,6 +273,7 @@ export function LoginPage() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -253,28 +285,28 @@ export function LoginPage() {
               {!isReset && (
                 <div className="flex flex-col gap-3 ml-1">
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="rememberMe" 
-                      checked={rememberMe} 
+                    <Checkbox
+                      id="rememberMe"
+                      checked={rememberMe}
                       onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                       className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
-                    <label 
-                      htmlFor="rememberMe" 
+                    <label
+                      htmlFor="rememberMe"
                       className="text-xs font-bold text-foreground/70 cursor-pointer select-none"
                     >
                       Lembrar meu usuário
                     </label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="keepConnected" 
-                      checked={keepConnected} 
+                    <Checkbox
+                      id="keepConnected"
+                      checked={keepConnected}
                       onCheckedChange={(checked) => setKeepConnected(checked as boolean)}
                       className="border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
-                    <label 
-                      htmlFor="keepConnected" 
+                    <label
+                      htmlFor="keepConnected"
                       className="text-xs font-bold text-foreground/70 cursor-pointer select-none"
                     >
                       Manter-me conectado
@@ -283,18 +315,18 @@ export function LoginPage() {
                 </div>
               )}
 
-              <Button 
-                type="submit" 
-                className="w-full h-12 text-base font-bold shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all" 
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-bold shadow-xl shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all"
               >
-                {isReset ? 'Enviar Recuperação' : 'Acessar Sistema'}
+                {isReset ? "Enviar Recuperação" : "Acessar Sistema"}
               </Button>
 
               {isReset && (
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  className="w-full h-12 font-bold" 
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full h-12 font-bold"
                   onClick={() => setIsReset(false)}
                 >
                   Voltar para o login

@@ -1,18 +1,22 @@
 rules_version = '2';
+
 service cloud.firestore {
+
   match /databases/{database}/documents {
-    
+
     // ============================================================
-    // FUNCTIONS
+    // HELPERS
     // ============================================================
-    
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    // SEC-03: Conta bloqueada deve perder privilégios IMEDIATAMENTE
     function userExists() {
       return isAuthenticated()
-        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.status == "ATIVO";
     }
 
     function getUserData() {
@@ -22,9 +26,7 @@ service cloud.firestore {
     function hasRole(role) {
       return userExists() && (
         getUserData().role == role || 
-        getUserData().perfil == role || 
-        getUserData().access_level == role || 
-        getUserData().nivelAcesso == role
+        getUserData().perfil == role
       );
     }
 
@@ -40,78 +42,175 @@ service cloud.firestore {
       return hasRole('LIDER');
     }
 
+    function isOwner(userId) {
+      return isAuthenticated() && userId == request.auth.uid;
+    }
+
     function canAccessTab(tabId) {
       return isGod() || (
         userExists() && 
-        getUserData().status == "ATIVO" &&
         getUserData().permissions != null && 
         tabId in getUserData().permissions
       );
     }
 
     // ============================================================
-    // COLLECTIONS
+    // USUÁRIOS (SEC-05, SEC-06, SEC-26)
     // ============================================================
 
     match /usuarios/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isGod() || isAdmin());
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
       
       allow create: if isGod() || (
         isAdmin() && 
-        request.resource.data.role != "GOD" &&
-        request.resource.data.status == "ATIVO"
+        request.resource.data.role != 'GOD' &&
+        request.resource.data.status == "ATIVO" &&
+        !( "auditoria" in request.resource.data.permissions )
       );
 
       allow update: if isGod() || (
         isAdmin() && 
-        resource.data.role != "GOD" && 
-        request.resource.data.role != "GOD" &&
-        userId != request.auth.uid // Impede autopromoção para GOD
+        resource.data.role != 'GOD' && 
+        request.resource.data.role != 'GOD' &&
+        // SEC-05: Usuário não pode alterar seu próprio privilégio
+        userId != request.auth.uid &&
+        // SEC-16: Apenas GOD gerencia acesso à auditoria
+        (request.resource.data.permissions == resource.data.permissions || 
+         !( "auditoria" in request.resource.data.permissions.diff(resource.data.permissions).affectedKeys() ))
       );
       
       allow delete: if isGod();
     }
 
+    // ============================================================
+    // FROTAS / PRANCHAS (SEC-31)
+    // ============================================================
+
     match /frotas/{frotaId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAdmin() || isLider() || canAccessTab('pranchas');
-      allow delete: if isAdmin();
+      allow write: if isAdmin() || isLider() || canAccessTab('pranchas');
     }
 
-    match /frentes/{id} {
+    // ============================================================
+    // FRENTES
+    // ============================================================
+
+    match /frentes/{frenteId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAdmin() || isLider() || canAccessTab('frentes');
-      allow delete: if isAdmin();
+      allow write: if isAdmin() || isLider() || canAccessTab('frentes');
     }
 
-    match /equipamentos/{id} {
+    // ============================================================
+    // EQUIPAMENTOS
+    // ============================================================
+
+    match /equipamentos/{equipId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAdmin() || isLider() || canAccessTab('equipamentos');
-      allow delete: if isAdmin();
+      allow write: if isAdmin() || isLider() || canAccessTab('equipamentos');
     }
+
+    // ============================================================
+    // AUDITORIA (SEC-15, SEC-17, SEC-18, SEC-19, SEC-20)
+    // ============================================================
 
     match /audit_logs/{logId} {
-      allow read: if isAdmin() || canAccessTab('auditoria');
-      allow create: if isAuthenticated();
-      allow update, delete: if false; // Imutável
+      allow read: if isGod() || (userExists() && "auditoria" in getUserData().permissions);
+      
+      // SEC-17: Impedir criação arbitrária
+      allow create: if isAuthenticated() 
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasAll(['uid', 'usuario', 'acao', 'entidade', 'entidadeId', 'timestamp'])
+        && request.resource.data.timestamp == request.time;
+        
+      // SEC-19, SEC-20: Logs são imutáveis
+      allow update, delete: if false;
     }
 
+    // ============================================================
+    // AGENDA / RESERVAS (SEC-07, SEC-08, SEC-09, SEC-10, SEC-11, SEC-12, SEC-13, SEC-14)
+    // ============================================================
+
     match /agenda/{reservaId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && canAccessTab('reservas');
-      allow update: if isAuthenticated() && canAccessTab('reservas');
+      // SEC-18: Leitura restrita por perfil (MOTORISTA/SOLICITANTE vêm apenas o seu)
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isLider() || 
+        resource.data.solicitanteId == request.auth.uid ||
+        resource.data.motoristaId == request.auth.uid ||
+        resource.data.userId == request.auth.uid
+      );
+      
+      // SEC-09, SEC-10: Impedir fraude de identidade e reserva pré-aprovada
+      allow create: if isAuthenticated() && canAccessTab('reservas')
+        && request.resource.data.solicitanteId == request.auth.uid
+        && (request.resource.data.status == "Pendente" || request.resource.data.status == "Agendado")
+        && !request.resource.data.keys().hasAny(['aprovadoPor', 'aprovadoEm', 'dataAprovacao']);
+
+      allow update: if isAuthenticated() && canAccessTab('reservas') && (
+        // SEC-14: Proteção contra manipulação de campos (affectedKeys)
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'updatedAt', 'aprovadoEm', 'aprovadoPor', 
+          'iniciadoEm', 'iniciadoPor', 'horarioInicioReal',
+          'finalizadoEm', 'finalizadoPor', 'horarioFimReal',
+          'relatorio', 'motivoRecusa', 'motoristaId', 'motoristaNome'
+        ]) &&
+        // SEC-09: Proteção contra falsificação de identidade
+        request.resource.data.solicitanteId == resource.data.solicitanteId &&
+        // SEC-11, SEC-12, SEC-13: Proteção de fluxo de aprovação e campos administrativos
+        ((request.resource.data.status == "Aprovado" && resource.data.status != "Aprovado") 
+          ? (isAdmin() && resource.data.solicitanteId != request.auth.uid)
+          : (request.resource.data.status == resource.data.status || 
+             request.resource.data.status == "Cancelado" || 
+             isAdmin() || isLider())) &&
+        // Bloquear alteração de quem aprovou/quando aprovou por usuários comuns
+        (request.resource.data.aprovadoPor == resource.data.aprovadoPor || isAdmin()) &&
+        (request.resource.data.aprovadoEm == resource.data.aprovadoEm || isAdmin())
+      );
+      
       allow delete: if isAdmin();
     }
 
-    match /relatorios/{id} {
+    // ============================================================
+    // RELATÓRIOS (SEC-33)
+    // ============================================================
+
+    match /relatorios/{relatorioId} {
       allow read: if isAuthenticated() && canAccessTab('relatorios');
-      allow write: if isAdmin();
+      allow create: if isAuthenticated() && canAccessTab('relatorios') 
+        && request.resource.data.usuarioId == request.auth.uid;
+      allow update: if isAuthenticated() && (isAdmin() || (canAccessTab('relatorios') && resource.data.usuarioId == request.auth.uid));
+      allow delete: if isAdmin();
     }
 
     // ============================================================
-    // DENY BY DEFAULT
+    // NOTIFICAÇÕES (SEC-30)
     // ============================================================
 
+    match /notificacoes/{notifId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // CONFIGURAÇÕES / SISTEMA (SEC-29)
+    // ============================================================
+
+    match /configuracoes/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if isGod();
+    }
+    
+    match /system_tests/{testId} {
+      allow read, write: if isGod();
+    }
+
+    match /system_test_steps/{stepId} {
+      allow read, write: if isGod();
+    }
+
+    // SEC-27: Princípio de Deny by Default
     match /{document=**} {
       allow read, write: if false;
     }

@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import autoTable from 'jspdf-autotable';
+import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -42,7 +42,7 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   const addHeader = (pageNum: number, totalPages?: number) => {
     // Top Bar - Primary Green Pitangueiras
     doc.setFillColor(64, 128, 12); // #40800c
-    doc.rect(0, 0, pageWidth, 20, 'F');
+    doc.rect(0, 0, pageWidth, 20, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
@@ -71,11 +71,7 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   const addFooter = (pageNum: number) => {
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text(
-      "LOCAPRANCHA — USINA PITANGUEIRAS | Relatório Operacional",
-      margin,
-      pageHeight - 10
-    );
+    doc.text("LOCAPRANCHA — USINA PITANGUEIRAS | Relatório Operacional", margin, pageHeight - 10);
     doc.text(`Página ${pageNum}`, pageWidth - margin, pageHeight - 10, {
       align: "right",
     });
@@ -103,8 +99,8 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
 
   // Resumo Executivo
   doc.setFillColor(245, 245, 245);
-  doc.roundedRect(margin, currentY, pageWidth - (margin * 2), 40, 2, 2, 'F');
-  
+  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 40, 2, 2, "F");
+
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(64, 128, 12);
@@ -112,16 +108,24 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
 
   doc.setTextColor(60, 60, 60);
   doc.setFontSize(9);
-  
+
   const col1 = margin + 5;
   const col2 = margin + 65;
   const col3 = margin + 125;
-  
+
   doc.text(`Total de Operações: ${data.resumo.total}`, col1, currentY + 17);
-  doc.text(`Finalizadas: ${data.resumo.finalizadas} (${data.resumo.finalizadasPercent}%)`, col1, currentY + 24);
+  doc.text(
+    `Finalizadas: ${data.resumo.finalizadas} (${data.resumo.finalizadasPercent}%)`,
+    col1,
+    currentY + 24,
+  );
   doc.text(`Em Andamento: ${data.resumo.emAndamento}`, col1, currentY + 31);
 
-  doc.text(`Canceladas: ${data.resumo.canceladas} (${data.resumo.canceladasPercent}%)`, col2, currentY + 17);
+  doc.text(
+    `Canceladas: ${data.resumo.canceladas} (${data.resumo.canceladasPercent}%)`,
+    col2,
+    currentY + 17,
+  );
   doc.text(`Horas Totais: ${data.resumo.totalHoras}h`, col2, currentY + 24);
   doc.text(`Usuários: ${data.resumo.usuariosDistintos}`, col2, currentY + 31);
 
@@ -136,7 +140,7 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   doc.setTextColor(0, 0, 0);
   doc.text("DETALHAMENTO DAS OPERAÇÕES", margin, currentY);
 
-  const tableRows = data.operacoes.map(op => [
+  const tableRows = data.operacoes.map((op) => [
     op.data || "N/A",
     op.hora || op.horarioRetirada || "N/A",
     op.pranchaId || "N/A",
@@ -144,24 +148,24 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     op.solicitanteNome || "N/A",
     op.origem || "N/A",
     op.destino || "N/A",
-    op.status || "N/A"
+    op.status || "N/A",
   ]);
 
   autoTable(doc, {
     startY: currentY + 5,
-    head: [['Data', 'Hora', 'Frota', 'Frente', 'Usuário', 'Origem', 'Destino', 'Status']],
+    head: [["Data", "Hora", "Frota", "Frente", "Usuário", "Origem", "Destino", "Status"]],
     body: tableRows,
-    theme: 'grid',
+    theme: "grid",
     headStyles: {
       fillColor: [64, 128, 12],
       textColor: [255, 255, 255],
       fontSize: 8,
-      fontStyle: 'bold',
-      halign: 'center'
+      fontStyle: "bold",
+      halign: "center",
     },
     bodyStyles: {
       fontSize: 7,
-      textColor: [50, 50, 50]
+      textColor: [50, 50, 50],
     },
     columnStyles: {
       0: { cellWidth: 15 },
@@ -171,7 +175,7 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
       4: { cellWidth: 25 },
       5: { cellWidth: 30 },
       6: { cellWidth: 30 },
-      7: { cellWidth: 20 }
+      7: { cellWidth: 20 },
     },
     margin: { top: 40, bottom: 20 },
     didDrawPage: (data) => {
@@ -180,19 +184,23 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
         addHeader(data.pageNumber);
       }
       addFooter(data.pageNumber);
-    }
+    },
   });
 
   // Final Summary on last page
   const finalY = (doc as any).lastAutoTable.finalY + 10;
-  
+
   if (finalY < pageHeight - 40) {
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text("RESUMO FINAL", margin, finalY);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(`O relatório apresenta um total de ${data.resumo.total} operações no período selecionado.`, margin, finalY + 7);
+    doc.text(
+      `O relatório apresenta um total de ${data.resumo.total} operações no período selecionado.`,
+      margin,
+      finalY + 7,
+    );
   }
 
   addFooter(1);

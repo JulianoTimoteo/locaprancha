@@ -4,18 +4,18 @@ import { getAuth } from "firebase/auth";
 
 // Firebase configuration for Web SDK
 const firebaseConfig = {
-  apiKey: "REMOVED_SECRET",
-  authDomain: "locaprancha.firebaseapp.com",
-  projectId: "locaprancha",
-  storageBucket: "locaprancha.firebasestorage.app",
-  messagingSenderId: "779406680946",
-  appId: "1:779406680946:web:f8a3286f6da76d7ab473eb",
-  measurementId: "G-491BHV18M6"
+  apiKey: import.meta.env["VITE_FIREBASE_API_KEY"],
+  authDomain: import.meta.env["VITE_FIREBASE_AUTH_DOMAIN"],
+  projectId: import.meta.env["VITE_FIREBASE_PROJECT_ID"],
+  storageBucket: import.meta.env["VITE_FIREBASE_STORAGE_BUCKET"],
+  messagingSenderId: import.meta.env["VITE_FIREBASE_MESSAGING_SENDER_ID"],
+  appId: import.meta.env["VITE_FIREBASE_APP_ID"],
+  measurementId: import.meta.env["VITE_FIREBASE_MEASUREMENT_ID"],
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const secondaryApp = initializeApp(firebaseConfig, 'SecondaryAuth');
+const secondaryApp = initializeApp(firebaseConfig, "SecondaryAuth");
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);

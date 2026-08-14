@@ -1,74 +1,95 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  onSnapshot, 
-  query, 
-  orderBy, 
+import React, { useState, useEffect } from "react";
+import {
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
   limit,
   where,
   getDocs,
   doc,
   deleteDoc,
-  writeBatch
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { AuditLog, UserRole } from '@/types';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
-import { SystemValidator, SystemTest, TestStep } from '@/lib/systemValidation';
-import { useAuth } from '@/features/auth/AuthContext';
-import { Play, CheckCircle2, XCircle, AlertTriangle, Info, Clock, Trash2, Search, FileText } from 'lucide-react';
-import { toast } from 'sonner';
+  writeBatch,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { AuditLog, UserRole } from "@/types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { SystemValidator, SystemTest, TestStep } from "@/lib/systemValidation";
+import { useAuth } from "@/features/auth/AuthContext";
+import {
+  Play,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Info,
+  Clock,
+  Trash2,
+  Search,
+  FileText,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export function AuditoriaList() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  useEffect(() => {
+    document.title = "Centro de Diagnóstico | Locaprancha";
+  }, []);
+
   const [systemTests, setSystemTests] = useState<SystemTest[]>([]);
   const [selectedTest, setSelectedTest] = useState<SystemTest | null>(null);
   const [testSteps, setTestSteps] = useState<TestStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [isTestRunning, setIsTestRunning] = useState(false);
-  const [testProgress, setTestProgress] = useState({ percent: 0, message: '' });
+  const [testProgress, setTestProgress] = useState({ percent: 0, message: "" });
   const { profile } = useAuth();
 
   useEffect(() => {
     // Audit Logs
-    const qLogs = query(collection(db, 'audit_logs'), orderBy('timestamp', 'desc'), limit(50));
+    const qLogs = query(collection(db, "audit_logs"), orderBy("timestamp", "desc"), limit(100));
     const unsubLogs = onSnapshot(qLogs, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
+      const data = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as AuditLog[];
       setLogs(data);
       setLoading(false);
     });
 
     // System Tests
-    const qTests = query(collection(db, 'system_tests'), orderBy('iniciadoEm', 'desc'), limit(10));
+    const qTests = query(collection(db, "system_tests"), orderBy("iniciadoEm", "desc"), limit(10));
     const unsubTests = onSnapshot(qTests, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
+      const data = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as SystemTest[];
       setSystemTests(data);
     });
@@ -82,14 +103,14 @@ export function AuditoriaList() {
   useEffect(() => {
     if (selectedTest?.testRunId) {
       const qSteps = query(
-        collection(db, 'system_test_steps'), 
-        where('testRunId', '==', selectedTest.testRunId),
-        orderBy('ordem', 'asc')
+        collection(db, "system_test_steps"),
+        where("testRunId", "==", selectedTest.testRunId),
+        orderBy("ordem", "asc"),
       );
       const unsubSteps = onSnapshot(qSteps, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({
+        const data = snapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         })) as TestStep[];
         setTestSteps(data);
       });
@@ -100,10 +121,10 @@ export function AuditoriaList() {
 
   const handleRunTest = async () => {
     if (!profile) return;
-    
+
     setIsTestRunning(true);
     const validator = new SystemValidator(profile.uid, profile.nickname || profile.name);
-    
+
     try {
       await validator.runFullValidation((percent, message) => {
         setTestProgress({ percent, message });
@@ -113,31 +134,34 @@ export function AuditoriaList() {
       toast.error("Erro durante o teste.");
     } finally {
       setIsTestRunning(false);
-      setTestProgress({ percent: 0, message: '' });
+      setTestProgress({ percent: 0, message: "" });
     }
   };
 
   const handleClearTest = async (testRunId: string) => {
     if (!confirm("Deseja realmente remover os registros deste teste?")) return;
-    
+
     try {
       const batch = writeBatch(db);
-      
+
       // Clear Steps
-      const qSteps = query(collection(db, 'system_test_steps'), where('testRunId', '==', testRunId));
+      const qSteps = query(
+        collection(db, "system_test_steps"),
+        where("testRunId", "==", testRunId),
+      );
       const stepsSnap = await getDocs(qSteps);
-      stepsSnap.docs.forEach(d => batch.delete(d.ref));
-      
+      stepsSnap.docs.forEach((d) => batch.delete(d.ref));
+
       // Clear Logs
-      const qLogs = query(collection(db, 'audit_logs'), where('testRunId', '==', testRunId));
+      const qLogs = query(collection(db, "audit_logs"), where("testRunId", "==", testRunId));
       const logsSnap = await getDocs(qLogs);
-      logsSnap.docs.forEach(d => batch.delete(d.ref));
-      
+      logsSnap.docs.forEach((d) => batch.delete(d.ref));
+
       // Clear Test Run Header
-      const qTests = query(collection(db, 'system_tests'), where('testRunId', '==', testRunId));
+      const qTests = query(collection(db, "system_tests"), where("testRunId", "==", testRunId));
       const testsSnap = await getDocs(qTests);
-      testsSnap.docs.forEach(d => batch.delete(d.ref));
-      
+      testsSnap.docs.forEach((d) => batch.delete(d.ref));
+
       await batch.commit();
       toast.success("Registros de teste removidos.");
       if (selectedTest?.testRunId === testRunId) setSelectedTest(null);
@@ -149,10 +173,16 @@ export function AuditoriaList() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'SUCESSO': case 'PASSOU': return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-      case 'FALHA': case 'FALHOU': return <XCircle className="w-5 h-5 text-red-500" />;
-      case 'BLOQUEADO': return <AlertTriangle className="w-5 h-5 text-orange-500" />;
-      default: return <Clock className="w-5 h-5 text-blue-500" />;
+      case "SUCESSO":
+      case "PASSOU":
+        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+      case "FALHA":
+      case "FALHOU":
+        return <XCircle className="w-5 h-5 text-red-500" />;
+      case "BLOQUEADO":
+        return <AlertTriangle className="w-5 h-5 text-orange-500" />;
+      default:
+        return <Clock className="w-5 h-5 text-blue-500" />;
     }
   };
 
@@ -162,11 +192,16 @@ export function AuditoriaList() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Centro de Diagnóstico</h2>
+          <h1 className="text-2xl font-bold tracking-tight" id="auditoria-title">
+            Centro de Diagnóstico
+          </h1>
+          <h2 className="sr-only" aria-labelledby="auditoria-title">
+            Monitoramento e Logs
+          </h2>
           <p className="text-muted-foreground">Monitoramento de integridade e logs operacionais.</p>
         </div>
 
-        {(profile?.role === 'GOD' || profile?.role === 'ADMINISTRADOR') && (
+        {(profile?.role === "GOD" || profile?.role === "ADMINISTRADOR") && (
           <Dialog>
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700 text-white font-bold gap-2 shadow-lg hover:shadow-green-500/20 transition-all">
@@ -178,14 +213,18 @@ export function AuditoriaList() {
               <DialogHeader>
                 <DialogTitle>Validação Operacional</DialogTitle>
                 <DialogDescription>
-                  Este teste executará operações reais e controladas no Firestore para validar o ciclo completo do sistema.
+                  Este teste executará operações reais e controladas no Firestore para validar o
+                  ciclo completo do sistema.
                 </DialogDescription>
               </DialogHeader>
-              
+
               <div className="space-y-4 py-4">
                 <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-sm flex gap-3">
                   <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <p>O <strong>Modo Seguro</strong> está ativado. O teste utilizará pranchas disponíveis e marcará todos os registros com flag de teste.</p>
+                  <p>
+                    O <strong>Modo Seguro</strong> está ativado. O teste utilizará pranchas
+                    disponíveis e marcará todos os registros com flag de teste.
+                  </p>
                 </div>
 
                 {isTestRunning && (
@@ -200,9 +239,11 @@ export function AuditoriaList() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => {}} disabled={isTestRunning}>CANCELAR</Button>
-                <Button 
-                  onClick={handleRunTest} 
+                <Button variant="outline" onClick={() => {}} disabled={isTestRunning}>
+                  CANCELAR
+                </Button>
+                <Button
+                  onClick={handleRunTest}
                   disabled={isTestRunning}
                   className="bg-green-600 hover:bg-green-700"
                 >
@@ -221,6 +262,7 @@ export function AuditoriaList() {
         </TabsList>
 
         <TabsContent value="auditoria">
+          <h3 className="sr-only">Logs de Auditoria</h3>
           <Card className="cyber-glass">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -245,14 +287,22 @@ export function AuditoriaList() {
                     {logs.map((log) => (
                       <TableRow key={log.id} className="hover:bg-muted/30 transition-colors">
                         <TableCell className="text-xs whitespace-nowrap">
-                          {log.timestamp?.toDate ? format(log.timestamp.toDate(), "dd/MM/yy HH:mm:ss") : 'Agora'}
+                          {log.timestamp?.toDate
+                            ? format(log.timestamp.toDate(), "dd/MM/yy HH:mm:ss")
+                            : "Agora"}
                         </TableCell>
                         <TableCell className="font-medium text-sm">{log.usuario}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="font-mono text-[10px] uppercase">{log.acao}</Badge>
+                          <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                            {log.acao}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-sm font-semibold text-primary">{log.entidade}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground font-mono">{log.entidadeId}</TableCell>
+                        <TableCell className="text-sm font-semibold text-primary">
+                          {log.entidade}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground font-mono">
+                          {log.entidadeId}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -263,6 +313,7 @@ export function AuditoriaList() {
         </TabsContent>
 
         <TabsContent value="validacao">
+          <h3 className="sr-only">Relatórios de Validação</h3>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-1 cyber-glass border-primary/20">
               <CardHeader>
@@ -276,24 +327,29 @@ export function AuditoriaList() {
                   </div>
                 ) : (
                   systemTests.map((test) => (
-                    <div 
+                    <div
                       key={test.id}
                       onClick={() => setSelectedTest(test)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:bg-muted/50 ${selectedTest?.id === test.id ? 'border-primary ring-1 ring-primary/20 bg-primary/5' : 'border-border'}`}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:bg-muted/50 ${selectedTest?.id === test.id ? "border-primary ring-1 ring-primary/20 bg-primary/5" : "border-border"}`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         {getStatusIcon(test.status)}
-                        <Badge variant={test.status === 'SUCESSO' ? 'default' : 'destructive'} className="text-[10px]">
+                        <Badge
+                          variant={test.status === "SUCESSO" ? "default" : "destructive"}
+                          className="text-[10px]"
+                        >
                           {test.status}
                         </Badge>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs font-mono font-bold">{test.testRunId}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {test.iniciadoEm?.toDate ? format(test.iniciadoEm.toDate(), "dd/MM/yy HH:mm:ss") : ''}
+                          {test.iniciadoEm?.toDate
+                            ? format(test.iniciadoEm.toDate(), "dd/MM/yy HH:mm:ss")
+                            : ""}
                         </p>
                         <div className="flex justify-between items-center text-[10px] mt-2">
-                          <span>Equipamento: {test.equipamentoTestado || 'N/A'}</span>
+                          <span>Equipamento: {test.equipamentoTestado || "N/A"}</span>
                           <span className="font-bold">{test.percentual?.toFixed(0)}%</span>
                         </div>
                       </div>
@@ -308,7 +364,9 @@ export function AuditoriaList() {
                 <Card className="h-full flex items-center justify-center p-12 text-center cyber-glass">
                   <div className="space-y-4">
                     <Search className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-                    <p className="text-muted-foreground">Selecione uma execução ao lado para ver o relatório detalhado.</p>
+                    <p className="text-muted-foreground">
+                      Selecione uma execução ao lado para ver o relatório detalhado.
+                    </p>
                   </div>
                 </Card>
               ) : (
@@ -321,21 +379,24 @@ export function AuditoriaList() {
                             <span className="text-black dark:text-white">LOCA</span>
                             <span className="text-[#40800c]">PRANCHA</span>
                           </span>
-                          <span className="text-muted-foreground/30 font-thin">|</span> 
+                          <span className="text-muted-foreground/30 font-thin">|</span>
                           VALIDAÇÃO DO SISTEMA
-                          {selectedTest.status === 'SUCESSO' ? (
+                          {selectedTest.status === "SUCESSO" ? (
                             <Badge className="bg-green-500 hover:bg-green-600">✅ APROVADO</Badge>
                           ) : (
                             <Badge variant="destructive">❌ REPROVADO</Badge>
                           )}
                         </CardTitle>
-                        <CardDescription className="font-mono mt-1">{selectedTest.testRunId}</CardDescription>
+                        <CardDescription className="font-mono mt-1">
+                          {selectedTest.testRunId}
+                        </CardDescription>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
                         onClick={() => handleClearTest(selectedTest.testRunId)}
+                        aria-label="Excluir registros deste teste"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -343,20 +404,28 @@ export function AuditoriaList() {
                     <CardContent>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
                         <div className="space-y-1">
-                          <p className="text-[10px] uppercase text-muted-foreground font-bold">Total Testes</p>
+                          <p className="text-[10px] uppercase text-muted-foreground font-bold">
+                            Total Testes
+                          </p>
                           <p className="text-2xl font-black">{selectedTest.totalEtapas}</p>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[10px] uppercase text-green-500 font-bold">Passaram</p>
-                          <p className="text-2xl font-black text-green-500">{selectedTest.etapasConcluidas - selectedTest.etapasFalhas}</p>
+                          <p className="text-2xl font-black text-green-500">
+                            {selectedTest.etapasConcluidas - selectedTest.etapasFalhas}
+                          </p>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[10px] uppercase text-red-500 font-bold">Falharam</p>
-                          <p className="text-2xl font-black text-red-500">{selectedTest.etapasFalhas}</p>
+                          <p className="text-2xl font-black text-red-500">
+                            {selectedTest.etapasFalhas}
+                          </p>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[10px] uppercase text-primary font-bold">Sucesso</p>
-                          <p className="text-2xl font-black text-primary">{selectedTest.percentual?.toFixed(1)}%</p>
+                          <p className="text-2xl font-black text-primary">
+                            {selectedTest.percentual?.toFixed(1)}%
+                          </p>
                         </div>
                       </div>
                     </CardContent>
@@ -368,20 +437,33 @@ export function AuditoriaList() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {testSteps.map((step) => (
-                        <div key={step.id} className="p-4 rounded-lg border bg-muted/20 flex flex-col md:flex-row gap-4 items-start justify-between">
+                        <div
+                          key={step.id}
+                          className="p-4 rounded-lg border bg-muted/20 flex flex-col md:flex-row gap-4 items-start justify-between"
+                        >
                           <div className="space-y-1 flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               {getStatusIcon(step.status)}
-                              <h4 className="font-bold text-sm uppercase tracking-wide">{step.etapa}</h4>
+                              <h4 className="font-bold text-sm uppercase tracking-wide">
+                                {step.etapa}
+                              </h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mt-3">
                               <div className="space-y-1">
-                                <span className="text-muted-foreground uppercase font-bold text-[9px]">Esperado</span>
+                                <span className="text-muted-foreground uppercase font-bold text-[9px]">
+                                  Esperado
+                                </span>
                                 <p className="font-medium">{step.esperado}</p>
                               </div>
                               <div className="space-y-1">
-                                <span className="text-muted-foreground uppercase font-bold text-[9px]">Obtido</span>
-                                <p className={`font-bold ${step.status === 'FALHOU' ? 'text-red-500' : 'text-green-500'}`}>{step.obtido}</p>
+                                <span className="text-muted-foreground uppercase font-bold text-[9px]">
+                                  Obtido
+                                </span>
+                                <p
+                                  className={`font-bold ${step.status === "FALHOU" ? "text-red-500" : "text-green-500"}`}
+                                >
+                                  {step.obtido}
+                                </p>
                               </div>
                             </div>
                             {step.mensagem && (
@@ -396,7 +478,7 @@ export function AuditoriaList() {
                             </Badge>
                             <div className="flex items-center justify-end gap-1 text-[9px] text-muted-foreground font-mono">
                               <Clock className="w-3 h-3" />
-                              {step.duracaoMs ? `${step.duracaoMs}ms` : '< 100ms'}
+                              {step.duracaoMs ? `${step.duracaoMs}ms` : "< 100ms"}
                             </div>
                           </div>
                         </div>
