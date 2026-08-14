@@ -27,14 +27,6 @@ export function useUsuarios() {
   const { profile } = useAuth();
 
   useEffect(() => {
-    const isAdmin = profile && (profile.role === "GOD" || profile.role === "ADMINISTRADOR");
-
-    if (!isAdmin) {
-      setUsuarios([]);
-      setLoading(false);
-      return;
-    }
-
     const q = query(collection(db, "usuarios"));
     const unsubscribe = onSnapshot(
       q,
@@ -49,7 +41,7 @@ export function useUsuarios() {
       },
     );
     return () => unsubscribe();
-  }, [profile]);
+  }, []);
 
   const normalizarNickname = (name: string) => {
     return name
