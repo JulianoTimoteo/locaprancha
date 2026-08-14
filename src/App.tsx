@@ -33,36 +33,69 @@ const EquipamentoList = lazy(() =>
 const RelatorioPage = lazy(() =>
   import("@/features/relatorios/RelatorioPage").then((m) => ({ default: m.RelatorioPage })),
 );
-const AnaliseCoaPage = lazy(() =>
-  import("@/features/analise-coa/AnaliseCoaPage").then((m) => ({ default: m.AnaliseCoaPage })),
-);
-const AuditoriaList = lazy(() =>
-  import("@/features/auditoria/AuditoriaList").then((m) => ({ default: m.AuditoriaList })),
-);
+// Módulo Análise COA removido por solicitação
+
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function App() {
   const { user, profile, loading, status } = useAuth();
-  const [currentView, setCurrentView] = useState("dashboard");
+  useNotifications(); // Ativar listener de alarmes globalmente para admins
+
+  const [currentView, setCurrentView] = useState(() => {
+    // 1. Prioridade: URL (necessário para deep linking no GitHub Pages)
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get("view");
+    if (viewParam) return viewParam;
+
+    // 2. Fallback: localStorage (persistência entre sessões)
+    const saved = localStorage.getItem("locaprancha_view");
+    if (saved) return saved;
+
+    // 3. Default
+    return "dashboard";
+  });
 
   useEffect(() => {
     const handleNav = (e: any) => {
       if (e.detail) {
-        setCurrentView(e.detail);
+        handleNavigate(e.detail);
       }
     };
+    
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state?.view) {
+        setCurrentView(e.state.view);
+      } else {
+        const params = new URLSearchParams(window.location.search);
+        const viewParam = params.get("view");
+        if (viewParam) setCurrentView(viewParam);
+      }
+    };
+
     window.addEventListener("navigate", handleNav);
-    return () => window.removeEventListener("navigate", handleNav);
+    window.addEventListener("popstate", handlePopState);
+    
+    return () => {
+      window.removeEventListener("navigate", handleNav);
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   useEffect(() => {
     if (user && profile && currentView === "dashboard") {
       // Garantir que estamos no dashboard ao logar
-      setCurrentView("dashboard");
+      handleNavigate(currentView || "dashboard");
     }
   }, [user, !!profile]);
 
   const handleNavigate = (view: string) => {
     setCurrentView(view);
+    localStorage.setItem("locaprancha_view", view);
+    
+    // Atualizar URL sem refresh (importante para GitHub Pages SPA)
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", view);
+    window.history.pushState({ view }, "", url.toString());
   };
 
   if (loading && !profile) {
@@ -71,8 +104,8 @@ export default function App() {
         <ConnectionBanner />
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-2xl shadow-primary/20" />
         <div className="font-black tracking-tighter animate-pulse select-none mt-4">
-          <span className="text-black dark:text-white text-3xl">LOCA</span>
-          <span className="text-[#40800c] text-3xl">PRANCHA</span>
+          <span className="text-black dark:text-white text-3xl font-black">LOCA</span>
+          <span className="text-[#40800c] text-3xl font-black">PRANCHA</span>
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest animate-pulse mt-4">
           Sincronizando ambiente seguro...
@@ -196,19 +229,10 @@ export default function App() {
                 <RelatorioPage />
               </ErrorBoundary>
             )}
-            {currentView === "analise-coa" && canAccessTab(profile, "analise-coa") && (
-              <ErrorBoundary area="AnaliseCOA">
-                <AnaliseCoaPage />
-              </ErrorBoundary>
-            )}
+            {/* Módulo Análise COA removido por solicitação */}
             {currentView === "usuarios" && canAccessTab(profile, "usuarios") && (
               <ErrorBoundary area="Usuarios">
                 <UsuarioList />
-              </ErrorBoundary>
-            )}
-            {currentView === "auditoria" && canAccessTab(profile, "auditoria") && (
-              <ErrorBoundary area="Auditoria">
-                <AuditoriaList />
               </ErrorBoundary>
             )}
           </Suspense>
