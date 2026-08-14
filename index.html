@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Locaprancha" />
     <link rel="apple-touch-icon" href="/locaprancha/logo-pitangueiras.png" />
-    <link rel="manifest" href="/locaprancha/manifest.json" />
+    <link rel="manifest" href="/locaprancha/manifest.webmanifest" />
     <meta
       name="description"
       content="Locaprancha - Sistema inteligente de gestão de frota e transporte de equipamentos para a Usina Pitangueiras."
@@ -21,6 +21,7 @@
       name="keywords"
       content="gestão de frota, transporte de máquinas, usina pitangueiras, logística, equipamentos"
     />
+
     <meta property="og:title" content="Locaprancha - Gestão de Frota" />
     <meta
       property="og:description"
@@ -32,6 +33,7 @@
       property="og:image"
       content="https://julianotimoteo.github.io/locaprancha/logo-pitangueiras.png"
     />
+
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Locaprancha - Gestão de Frota" />
     <meta
@@ -42,10 +44,64 @@
       name="twitter:image"
       content="https://julianotimoteo.github.io/locaprancha/logo-pitangueiras.png"
     />
+
     <title>Locaprancha - Gestão de Frota</title>
   </head>
-  <body>
+  <body class="bg-background">
     <div id="root"></div>
+    
+    <!-- Emergency Loader (Regra 28: Anti-Tela Branca) -->
+    <div id="emergency-loader" style="position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:white;z-index:9999;font-family:sans-serif;padding:20px;text-align:center;">
+      <div style="width:40px;height:40px;border:4px solid #40800c;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:20px;"></div>
+      <h2 style="font-weight:900;text-transform:uppercase;margin:0;letter-spacing:-1px;">Locaprancha</h2>
+      <p style="font-size:12px;color:#666;margin-top:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Sincronizando ambiente seguro...</p>
+      
+      <div id="error-diagnosis" style="display:none;margin-top:20px;max-width:300px;">
+        <p style="font-size:11px;color:#ef4444;margin-bottom:15px;line-height:1.4;">
+          O sistema detectou uma falha na inicialização do React. Isso geralmente ocorre devido a cache corrompido ou incompatibilidade de versão.
+        </p>
+        <button id="reset-storage-html" style="width:100%;padding:14px 20px;background:#ef4444;color:white;border:none;border-radius:12px;font-weight:900;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 14px rgba(239,68,68,0.4);transition:transform 0.2s ease;">
+          LIMPAR CACHE E REINICIAR
+        </button>
+      </div>
+
+      <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #reset-storage-html:active { transform: scale(0.95); }
+      </style>
+      <script>
+        // Versão v1.5.0
+        setTimeout(() => {
+          const root = document.getElementById('root');
+          const isEmpty = !root || root.innerHTML.trim() === '';
+          
+          if (isEmpty) {
+            const diagnosis = document.getElementById('error-diagnosis');
+            if (diagnosis) diagnosis.style.display = 'block';
+            console.error('[ANTI-WHITE-SCREEN] Falha crítica de montagem detectada.');
+          } else {
+            const loader = document.getElementById('emergency-loader');
+            if (loader && !isEmpty) loader.style.display = 'none';
+          }
+        }, 4000);
+
+        document.getElementById('reset-storage-html')?.addEventListener('click', () => {
+          console.warn('[ANTI-WHITE-SCREEN] Executando Hard Reset Manual via HTML...');
+          localStorage.clear();
+          sessionStorage.clear();
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+              for(let registration of registrations) registration.unregister();
+            });
+          }
+          fetch(window.location.href, { cache: 'reload', mode: 'no-cors' })
+            .finally(() => {
+              window.location.href = window.location.origin + window.location.pathname + '?reset=' + Date.now();
+            });
+        });
+      </script>
+    </div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
