@@ -6,7 +6,6 @@ import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { initAppPersistence } from "./lib/utils/storage";
 import "./styles.css";
 
-
 // Iniciar persistência e limpar dados antigos se necessário
 try {
   initAppPersistence();
@@ -26,8 +25,12 @@ if (rootElement) {
       </ErrorBoundary>
     </React.StrictMode>,
   );
-  
+
   // Ocultar loader de emergência após renderização bem-sucedida
-  const loader = document.getElementById('emergency-loader');
-  if (loader) loader.style.display = 'none';
+  const loader = document.getElementById("emergency-loader");
+  if (loader) {
+    loader.style.display = "none";
+    // Remover o elemento do DOM para evitar interferências
+    setTimeout(() => loader.remove(), 500);
+  }
 }
