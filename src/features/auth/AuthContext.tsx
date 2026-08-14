@@ -62,12 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("LOADING");
 
   // Recuperar perfil do cache IMEDIATAMENTE no render inicial se existir
-  useEffect(() => {
+  useState(() => {
     const cachedProfile = persistence.get<UserProfile>("profile");
     if (cachedProfile) {
       setProfile(cachedProfile);
     }
-  }, []);
+  });
 
   // Sincronizar status quando o profile for carregado do cache ou da rede
   useEffect(() => {
