@@ -42,7 +42,8 @@ export function IndexPage() {
           </p>
           <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">
             Eu, JULIANO TIMOTEO, sou o PROPRIETÁRIO ÚNICO e LEGÍTIMO do repositório:
-            https://github.com/JulianoTimoteo/locaprancha, e para publicar aqui, quero ver funcionando agora.
+            https://github.com/JulianoTimoteo/locaprancha, e para publicar aqui, quero ver
+            funcionando agora.
           </h2>
         </div>
 
