@@ -33,9 +33,11 @@ export const formatReservaDateTime = (reserva: Reserva): string => {
     try {
       // O Firestore Timestamp tem toDate()
       const dateObj =
-        typeof reserva.horarioFimReal.toDate === "function"
+        reserva.horarioFimReal && typeof reserva.horarioFimReal.toDate === "function"
           ? reserva.horarioFimReal.toDate()
-          : new Date(reserva.horarioFimReal);
+          : reserva.horarioFimReal instanceof Date
+            ? reserva.horarioFimReal
+            : new Date();
       horaFim = format(dateObj, "HH:mm");
     } catch (e) {
       horaFim = reserva.horarioDevolucaoPrevisto || "00:00";
