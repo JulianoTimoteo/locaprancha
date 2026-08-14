@@ -45,6 +45,8 @@ export async function autoMigrateProfile(authUser: any): Promise<boolean> {
 
       if (oldId === authUser.uid) return true;
 
+      console.log(`[AUTO-MIGRATION] Migrando perfil de ${oldId} para ${authUser.uid}`);
+
       // 3. Criar o novo documento com ID = UID
       const newData = {
         ...oldData,
