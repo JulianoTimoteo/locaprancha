@@ -109,9 +109,8 @@ export function LoginPage() {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
+    let targetEmail = email;
     try {
-      let targetEmail = email;
-
       if (!email.includes("@")) {
         targetEmail = await resolverNicknameParaEmail(email);
         if (!targetEmail) {
@@ -121,25 +120,20 @@ export function LoginPage() {
         }
       }
 
-      // Configurar Persistência
       await setPersistence(
         auth,
         keepConnected ? browserLocalPersistence : browserSessionPersistence,
       );
 
-      // Lembrar e-mail
       if (rememberMe) {
         localStorage.setItem("locaprancha_remembered_email", email);
       } else {
         localStorage.removeItem("locaprancha_remembered_email");
       }
 
-      // 2. Autenticação no Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, targetEmail, password);
       const user = userCredential.user;
 
-      // 3. Auto-Migração / Auto-Vínculo (Instrução: Criar automaticamente)
-      // Se o perfil existir com ID antigo mas mesmo email, ele é migrado para usuarios/{UID}
       try {
         await autoMigrateProfile(user);
 
