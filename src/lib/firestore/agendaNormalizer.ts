@@ -1,4 +1,5 @@
 import { Reserva, AgendaStatus } from "@/types";
+import { Timestamp } from "firebase/firestore";
 import { normalizeString } from "./normalizers";
 
 /**
