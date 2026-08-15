@@ -206,7 +206,9 @@ export function LoginPage() {
               src={logoAsset.url}
               alt="Logo Usina Pitangueiras"
               className="w-full h-auto object-contain filter drop-shadow-2xl"
-              onError={(e) => (e.currentTarget.style.display = "none")}
+              onError={(e) => {
+                e.currentTarget.src = "/logo-pitangueiras.png";
+              }}
             />
           </div>
           <div className="space-y-4">
@@ -245,7 +247,9 @@ export function LoginPage() {
                 src={logoAsset.url}
                 alt="Logo Usina Pitangueiras"
                 className="w-full h-auto object-contain"
-                onError={(e) => (e.currentTarget.style.display = "none")}
+                onError={(e) => {
+                  e.currentTarget.src = "/logo-pitangueiras.png";
+                }}
               />
             </div>
             <h1 className="flex flex-col items-center font-black tracking-tight leading-[0.85] select-none">

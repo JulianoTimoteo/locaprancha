@@ -48,6 +48,7 @@ export function FrotaList() {
   const [isWorkshopDialogOpen, setIsWorkshopDialogOpen] = useState(false);
   const [frotaForWorkshop, setFrotaForWorkshop] = useState<Frota | null>(null);
   const [justification, setJustification] = useState("");
+  const [customJustification, setCustomJustification] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
@@ -85,17 +86,19 @@ export function FrotaList() {
 
   const openWorkshopDialog = (frota: Frota) => {
     if (frota.status === "ALOCADO") {
-      // Regra 12
       return;
     }
     setFrotaForWorkshop(frota);
     setJustification("");
+    setCustomJustification("");
     setIsWorkshopDialogOpen(true);
   };
 
   const handleSendToWorkshop = async () => {
-    if (!frotaForWorkshop || !justification) return;
-    await changeStatus(frotaForWorkshop.id, "OFICINA", justification);
+    if (!frotaForWorkshop) return;
+    const motivo = justification === "Outros" ? customJustification.trim() : justification;
+    if (!motivo) return;
+    await changeStatus(frotaForWorkshop.id, "OFICINA", motivo);
     setIsWorkshopDialogOpen(false);
   };
 
@@ -345,7 +348,8 @@ export function FrotaList() {
                   <Textarea
                     placeholder="Descreva o motivo..."
                     className="mt-2 text-sm"
-                    onChange={(e) => setJustification(e.target.value)}
+                    value={customJustification}
+                    onChange={(e) => setCustomJustification(e.target.value)}
                   />
                 )}
               </div>
@@ -363,7 +367,9 @@ export function FrotaList() {
             <Button
               className="bg-red-600 hover:bg-red-700 font-black tracking-widest uppercase shadow-lg shadow-red-600/20"
               onClick={handleSendToWorkshop}
-              disabled={!justification}
+              disabled={
+                !justification || (justification === "Outros" && !customJustification.trim())
+              }
             >
               ENVIAR PARA OFICINA
             </Button>

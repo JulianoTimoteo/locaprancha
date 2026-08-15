@@ -74,7 +74,9 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                 src={logoAsset.url}
                 alt="Logo Usina Pitangueiras"
                 className="w-full h-full object-contain filter drop-shadow-2xl"
-                onError={(e) => (e.currentTarget.style.display = "none")}
+                onError={(e) => {
+                  e.currentTarget.src = "/logo-pitangueiras.png";
+                }}
               />
             </div>
             <div className="flex flex-col items-center -mt-10 z-20">
@@ -142,6 +144,9 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                 src={logoAsset.url}
                 alt="Logo Usina Pitangueiras"
                 className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = "/logo-pitangueiras.png";
+                }}
               />
             </div>
             <span className="text-xl font-black tracking-tighter">

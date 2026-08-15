@@ -111,6 +111,11 @@ export function ReservaForm({
       return;
     }
 
+    if (formData.frenteId === "OUTROS" && !formData.observacao.trim()) {
+      toast.error("Informe as observações.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const equipamentoNome =
@@ -360,7 +365,7 @@ export function ReservaForm({
               value={formData.observacao}
               onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
               placeholder="Informações adicionais..."
-              required={formData.frenteId === "OUTROS"}
+              required
             />
           </div>
 
