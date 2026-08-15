@@ -99,27 +99,8 @@
 
       <div id="error-diagnosis" style="display: none; margin-top: 20px; max-width: 300px">
         <p style="font-size: 11px; color: #ef4444; margin-bottom: 15px; line-height: 1.4">
-          O sistema detectou uma falha na inicialização do React. Isso geralmente ocorre devido a
-          cache corrompido ou incompatibilidade de versão.
+          O sistema detectou uma falha na inicialização. Tentando recuperação automática...
         </p>
-        <button
-          id="reset-storage-html"
-          style="
-            width: 100%;
-            padding: 14px 20px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 900;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
-            transition: transform 0.2s ease;
-          "
-        >
-          LIMPAR CACHE E REINICIAR
-        </button>
       </div>
 
       <style>
@@ -133,75 +114,63 @@
         }
       </style>
       <script>
-        // Versão v1.7.6 - Anti-White-Screen Guard Reinforced (Mount-Aware)
+        // Versão v1.8.0 - Automatic Hard Recovery (No UI required)
         let autoRetryCount = parseInt(localStorage.getItem("locaprancha_auto_retry") || "0");
         let appMounted = false;
 
-        // Detector de montagem bem-sucedida
+        const performHardReset = () => {
+          console.warn("[RECOVERY] Executando Hard Reset Automático...");
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+              for (let registration of registrations) registration.unregister();
+            });
+          }
+
+          if ("caches" in window) {
+            caches.keys().then((names) => {
+              for (let name of names) caches.delete(name);
+            });
+          }
+
+          const nextRetry = autoRetryCount + 1;
+          localStorage.setItem("locaprancha_auto_retry", nextRetry.toString());
+          
+          window.location.href = window.location.origin + window.location.pathname + "?reset=" + Date.now();
+        };
+
         const checkMount = () => {
           const root = document.getElementById("root");
           const isEmpty = !root || root.innerHTML.trim() === "";
           if (!isEmpty) {
             appMounted = true;
             const loader = document.getElementById("emergency-loader");
-            if (loader) {
-              loader.style.display = "none";
-              console.log("[ANTI-WHITE-SCREEN] App montado com sucesso.");
-            }
+            if (loader) loader.style.display = "none";
             localStorage.removeItem("locaprancha_auto_retry");
             return true;
           }
           return false;
         };
 
-        // Verificar periodicamente se o app montou
         const mountInterval = setInterval(() => {
           if (checkMount()) clearInterval(mountInterval);
         }, 500);
 
-        // Timeout de segurança para falha de montagem
         setTimeout(() => {
           clearInterval(mountInterval);
           if (!appMounted) {
-            console.error("[ANTI-WHITE-SCREEN] Falha crítica de montagem detectada após 8s.");
-
-            if (autoRetryCount < 1) {
-              const nextRetry = autoRetryCount + 1;
-              localStorage.clear();
-              sessionStorage.clear();
-              localStorage.setItem("locaprancha_auto_retry", nextRetry.toString());
-
-              if ("serviceWorker" in navigator) {
-                navigator.serviceWorker.getRegistrations().then((registrations) => {
-                  for (let registration of registrations) registration.unregister();
-                });
-              }
-              window.location.href =
-                window.location.origin + window.location.pathname + "?auto-reset=" + Date.now();
+            if (autoRetryCount < 3) {
+              performHardReset();
             } else {
-              console.error("[ANTI-WHITE-SCREEN] Recuperação automática esgotada. Mostrando diagnóstico.");
               const diag = document.getElementById("error-diagnosis");
               if (diag) diag.style.display = "block";
-              localStorage.removeItem("locaprancha_auto_retry");
+              // Tentar um último reset após 5 segundos se nada mudar
+              setTimeout(performHardReset, 5000);
             }
           }
-        }, 8000);
-
-        document.getElementById("reset-storage-html")?.addEventListener("click", () => {
-          console.warn("[ANTI-WHITE-SCREEN] Executando Hard Reset Manual via HTML...");
-          localStorage.clear();
-          sessionStorage.clear();
-          localStorage.removeItem("locaprancha_auto_retry");
-          if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-              for (let registration of registrations) registration.unregister();
-            });
-          }
-          fetch(window.location.href, { cache: "reload", mode: "no-cors" }).finally(() => {
-            window.location.href =
-              window.location.origin + window.location.pathname + "?reset=" + Date.now();
-          });
-        });
+        }, 6000);
       </script>
     </div>
 
