@@ -5,8 +5,8 @@
  * não trave em estados corrompidos (ex: rotas inexistentes, sessões expiradas).
  */
 
-const VERSION = "1.7.4";
-export const BUILD_DATE = "15/08/2026 10:30 UTC"; // v1.7.4 - Loop stabilization audit
+const VERSION = "1.7.5";
+export const BUILD_DATE = "15/08/2026 10:45 UTC"; // v1.7.5 - Render loop protection pass
 
 export const initAppPersistence = () => {
   try {
