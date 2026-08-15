@@ -113,7 +113,9 @@ export function LoginPage() {
     let targetEmail = email;
     try {
       if (!email.includes("@")) {
+        console.log("[LOGIN] Resolvendo nickname...");
         targetEmail = await resolverNicknameParaEmail(email);
+        console.log("[LOGIN] Nickname resolvido para:", targetEmail);
         if (!targetEmail) {
           toast.error("Usuário ou senha inválidos.");
           setLoading(false);
@@ -121,6 +123,7 @@ export function LoginPage() {
         }
       }
 
+      console.log("[LOGIN] Configurando persistência...");
       await setPersistence(
         auth,
         keepConnected ? browserLocalPersistence : browserSessionPersistence,
@@ -132,12 +135,17 @@ export function LoginPage() {
         localStorage.removeItem("locaprancha_remembered_email");
       }
 
+      console.log("[LOGIN] Chamando signInWithEmailAndPassword...", { targetEmail });
       const userCredential = await signInWithEmailAndPassword(auth, targetEmail, password);
       const user = userCredential.user;
+      console.log("[LOGIN] signIn com sucesso:", { uid: user.uid, email: user.email });
 
       try {
+        console.log("[LOGIN] Executando autoMigrateProfile...");
         await autoMigrateProfile(user);
+        console.log("[LOGIN] autoMigrateProfile concluído");
 
+        console.log("[LOGIN] Atualizando último acesso...");
         const userDocRef = doc(db, "usuarios", user.uid);
         await setDoc(
           userDocRef,
@@ -148,8 +156,9 @@ export function LoginPage() {
           },
           { merge: true },
         );
+        console.log("[LOGIN] Último acesso atualizado");
       } catch (firestoreError) {
-        console.error("Erro ao atualizar dados do usuário:", firestoreError);
+        console.error("[LOGIN] Erro no Firestore pós-login:", firestoreError);
       }
 
       toast.success("Bem-vindo ao Locaprancha!");
@@ -159,8 +168,11 @@ export function LoginPage() {
         email: targetEmail,
         code: error?.code,
         message: error?.message,
+        stack: error?.stack,
       });
-      toast.error("Usuário ou senha inválidos.");
+      const errorMessage = error?.message || "Erro desconhecido";
+      const errorCode = error?.code || "sem código";
+      toast.error(`Usuário ou senha inválidos.\n\nCódigo: ${errorCode}\nDetalhe: ${errorMessage}`);
       setLoading(false);
     }
   };
