@@ -13,6 +13,8 @@ const requiredEnv = (key: string) => {
   return value;
 };
 
+const isDev = import.meta.env.DEV;
+
 const firebaseConfig = {
   apiKey: requiredEnv("VITE_FIREBASE_API_KEY"),
   authDomain: requiredEnv("VITE_FIREBASE_AUTH_DOMAIN"),
@@ -22,6 +24,15 @@ const firebaseConfig = {
   appId: requiredEnv("VITE_FIREBASE_APP_ID"),
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
+
+if (isDev) {
+  console.warn(
+    "[FIREBASE] Usando configuração do .env. Se a API key for inválida, gere uma nova no Firebase Console.",
+  );
+}
+
+export const DEV_MOCK_API_KEY =
+  "BJlogN89e6jT7Yf87ZuU5qGsoFL0xhx8J9attfodSIMLML30pvmiE-K4VFfdgfrC20Kwlr8mhxNJOeYXnHoQ8LU";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
