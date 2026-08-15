@@ -1,16 +1,11 @@
-import { 
-  collection, 
-  getDocs, 
-  writeBatch, 
-  doc
-} from "firebase/firestore";
+import { collection, getDocs, writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export async function cleanupEquipamentos(): Promise<number> {
   console.log("Iniciando faxina de equipamentos...");
   const equipRef = collection(db, "equipamentos");
   const snapshot = await getDocs(equipRef);
-  
+
   if (snapshot.empty) {
     console.log("Nenhum equipamento encontrado.");
     return 0;
@@ -23,7 +18,7 @@ export async function cleanupEquipamentos(): Promise<number> {
     const data = doc.data();
     // Identificador único: código + descrição + tipo (grupo)
     const key = `${data.codigo || ""}|${data.nome || ""}|${data.tipo || ""}`.toLowerCase().trim();
-    
+
     if (seen.has(key)) {
       toDelete.push(doc.id);
     } else {
@@ -33,7 +28,7 @@ export async function cleanupEquipamentos(): Promise<number> {
 
   if (toDelete.length > 0) {
     console.log(`Removendo ${toDelete.length} duplicados...`);
-    
+
     // Deletar em lotes de 500 (limite do Firestore)
     for (let i = 0; i < toDelete.length; i += 500) {
       const batch = writeBatch(db);
@@ -43,7 +38,7 @@ export async function cleanupEquipamentos(): Promise<number> {
       });
       await batch.commit();
     }
-    
+
     console.log("Faxina concluída com sucesso!");
     return toDelete.length;
   } else {
