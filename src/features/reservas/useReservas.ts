@@ -89,7 +89,8 @@ export function useReservas() {
       });
 
       // Só atualiza o estado se os dados realmente mudaram para evitar loops de render
-      if (JSON.stringify(sortedData) !== JSON.stringify(prevData)) {
+      const dataChanged = JSON.stringify(sortedData) !== JSON.stringify(prevData);
+      if (dataChanged) {
         setReservas(sortedData);
         persistence.save("agenda_full", sortedData);
         setLoading(false);
