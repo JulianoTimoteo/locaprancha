@@ -36,14 +36,15 @@ export function ConnectionBanner() {
   if (!isVisible) return null;
 
   const firstName = profile?.name?.split(" ")[0] || "";
+  const isGodOrAdmin = profile && ["GOD", "ADMINISTRADOR"].includes(profile.role);
 
   return (
     <div
       role="alert"
       aria-live="polite"
       className={cn(
-        "fixed top-4 left-1/2 -translate-x-1/2 z-[250] flex items-center gap-3 px-4 py-2 rounded-2xl bg-card/95 backdrop-blur-xl border border-primary/20 shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-top-4",
-        status !== "online" && "ring-2 ring-primary/20",
+        "fixed top-4 left-1/2 -translate-x-1/2 z-[250] flex items-center gap-3 px-5 py-2.5 rounded-full bg-card/80 backdrop-blur-2xl border border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all duration-500 animate-in fade-in slide-in-from-top-4 ring-1 ring-white/10",
+        status !== "online" && "ring-2 ring-primary/30 scale-105",
       )}
     >
       <div className="flex items-center gap-2">
@@ -62,7 +63,7 @@ export function ConnectionBanner() {
         <span className="text-[11px] font-black uppercase tracking-widest text-foreground flex items-center gap-1">
           {status === "online" && <>Bem-vindo ao Locaprancha{firstName ? `! ${firstName}` : "!"}</>}
           {status === "syncing" && "Sincronizando Dados..."}
-          {status === "offline" && "Sistema Offline"}
+          {status === "offline" && "Sistema Offline (Usando Cache Local)"}
           {status === "connecting" && "Conectando ao Servidor..."}
         </span>
       </div>

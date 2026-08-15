@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Reserva } from "@/types";
 
 interface OperationalReportData {
   titulo: string;
@@ -24,7 +25,7 @@ interface OperationalReportData {
     equipamentosDistintos: number;
     frentesDistintas: number;
   };
-  operacoes: any[];
+  operacoes: (Reserva | Record<string, unknown>)[];
 }
 
 export const generateOperationalReportPdf = (data: OperationalReportData) => {
@@ -140,18 +141,21 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   doc.setTextColor(0, 0, 0);
   doc.text("DETALHAMENTO DAS OPERAÇÕES", margin, currentY);
 
-  const tableRows = data.operacoes.map((op) => [
-    op.data || "N/A",
-    op.hora || op.horarioRetirada || "N/A",
-    op.pranchaId || "N/A",
-    op.frenteId || "N/A",
-    op.solicitanteNome || "N/A",
-    op.origem || "N/A",
-    op.destino || "N/A",
-    op.status || "N/A",
-  ]);
+  const tableRows = data.operacoes.map((op) => {
+    const r = op as Reserva;
+    return [
+      r.data || "N/A",
+      r.hora || r.horarioRetirada || "N/A",
+      r.pranchaId || "N/A",
+      r.frenteId || "N/A",
+      r.solicitanteNome || "N/A",
+      r.origem || "N/A",
+      r.destino || "N/A",
+      r.status || "N/A",
+    ];
+  });
 
-  autoTable(doc, {
+  (autoTable as unknown as (d: jsPDF, options: Record<string, unknown>) => void)(doc, {
     startY: currentY + 5,
     head: [["Data", "Hora", "Frota", "Frente", "Usuário", "Origem", "Destino", "Status"]],
     body: tableRows,
@@ -178,7 +182,7 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
       7: { cellWidth: 20 },
     },
     margin: { top: 40, bottom: 20 },
-    didDrawPage: (data) => {
+    didDrawPage: (data: { pageNumber: number }) => {
       // For pages > 1, add header and footer
       if (data.pageNumber > 1) {
         addHeader(data.pageNumber);
@@ -188,7 +192,8 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   });
 
   // Final Summary on last page
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  const finalY =
+    (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY || currentY + 10;
 
   if (finalY < pageHeight - 40) {
     doc.setFontSize(10);

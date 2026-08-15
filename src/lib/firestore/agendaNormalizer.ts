@@ -1,4 +1,5 @@
 import { Reserva, AgendaStatus } from "@/types";
+import { Timestamp } from "firebase/firestore";
 import { normalizeString } from "./normalizers";
 
 /**
@@ -16,13 +17,17 @@ const FIELD_MAPPINGS = {
 /**
  * Resolve um valor baseado em múltiplos campos possíveis (compatibilidade legada)
  */
-function resolveValue(data: any, fields: string[], fallback: string = ""): string {
+function resolveValue(
+  data: Record<string, unknown>,
+  fields: string[],
+  fallback: string = "",
+): string {
   for (const field of fields) {
     if (data[field] !== undefined && data[field] !== null && data[field] !== "") {
       const val = data[field];
       if (val && typeof val === "object" && "seconds" in val) {
         try {
-          const seconds = (val as any).seconds;
+          const seconds = (val as { seconds: number }).seconds;
           const date = new Date(seconds * 1000);
           const parts = date.toISOString().split("T");
           if (parts[0]) return parts[0];
@@ -40,7 +45,7 @@ function resolveValue(data: any, fields: string[], fallback: string = ""): strin
 /**
  * Normaliza o status da agenda (Instrução 14)
  */
-export function normalizeReservaStatus(rawStatus: any): AgendaStatus {
+export function normalizeReservaStatus(rawStatus: unknown): AgendaStatus {
   if (!rawStatus) return "Pendente";
   const s = normalizeString(rawStatus).toUpperCase();
 
@@ -62,7 +67,7 @@ export function normalizeReservaStatus(rawStatus: any): AgendaStatus {
  * Normaliza um registro da Agenda (Instrução 5)
  * CENTRALIZA toda a lógica de leitura do Firestore para a Agenda
  */
-export function normalizeAgendaRecord(id: string, data: any): Reserva {
+export function normalizeAgendaRecord(id: string, data: Record<string, unknown>): Reserva {
   const solicitanteId = data?.solicitanteId || data?.userId || data?.criadoPor || null;
   const solicitanteNome = normalizeString(
     data?.solicitanteNome || data?.solicitante || data?.userName || data?.usuario,
@@ -78,20 +83,22 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
 
   return {
     id: id,
-    tipoOperacao: data?.tipoOperacao || (data?.locacaoDireta ? "LOCACAO_DIRETA" : "SOLICITACAO"),
+    tipoOperacao:
+      (data?.tipoOperacao as Reserva["tipoOperacao"]) ||
+      (data?.locacaoDireta ? "LOCACAO_DIRETA" : "SOLICITACAO"),
     status: normalizeReservaStatus(data?.status || data?.situacao),
 
     // Identidade
-    usuarioId: data?.userId || solicitanteId || null,
-    solicitanteId: solicitanteId,
+    usuarioId: (data?.userId as string) || (solicitanteId as string) || null,
+    solicitanteId: solicitanteId as string | null,
     solicitanteNome: solicitanteNome,
     solicitante: solicitanteNome,
 
     // Frota / Equipamento
-    pranchaId: equipamentoId, // pranchaId é o identificador operacional (Frota)
+    pranchaId: equipamentoId,
     frotaId: equipamentoId,
     frotaNumero: equipamentoId,
-    equipamentoId: data?.equipamentoId || data?.equipamento || null,
+    equipamentoId: (data?.equipamentoId as string) || (data?.equipamento as string) || null,
     equipamentoNome: normalizeString(
       data?.equipamentoNome || data?.equipamento,
       "Aguardando definição",
@@ -118,20 +125,22 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
     ),
 
     // Operação
-    motoristaId: data?.motoristaId || null,
+    motoristaId: (data?.motoristaId as string) || null,
     motoristaNome: normalizeString(data?.motoristaNome || data?.motorista, "Não informado"),
 
-    horarioInicioReal: data?.horarioInicioReal || data?.iniciadoEm || null,
-    horarioFimReal: data?.horarioFimReal || data?.finalizadoEm || null,
-    iniciadoEm: data?.iniciadoEm || data?.horarioInicioReal || null,
-    iniciadoPor: data?.iniciadoPor || null,
-    finalizadoEm: data?.finalizadoEm || data?.horarioFimReal || null,
-    finalizadoPor: data?.finalizadoPor || null,
+    horarioInicioReal:
+      (data?.horarioInicioReal as Timestamp) || (data?.iniciadoEm as Timestamp) || null,
+    horarioFimReal:
+      (data?.horarioFimReal as Timestamp) || (data?.finalizadoEm as Timestamp) || null,
+    iniciadoEm: (data?.iniciadoEm as Timestamp) || (data?.horarioInicioReal as Timestamp) || null,
+    iniciadoPor: (data?.iniciadoPor as string) || null,
+    finalizadoEm: (data?.finalizadoEm as Timestamp) || (data?.horarioFimReal as Timestamp) || null,
+    finalizadoPor: (data?.finalizadoPor as string) || null,
 
     observacao: normalizeString(data?.observacao || data?.obs || data?.justificativa, "Nenhuma"),
-    relatorio: data?.relatorio || null,
+    relatorio: (data?.relatorio as string) || null,
     motivoRecusa: normalizeString(data?.motivoRecusa || data?.justificativaRecusa),
-    createdAt: data?.createdAt || null,
+    createdAt: (data?.createdAt as Timestamp) || null,
     testeSistema: !!data?.testeSistema || !!data?.testeE2E,
   };
 }

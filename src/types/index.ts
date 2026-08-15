@@ -11,8 +11,8 @@ export interface UserProfile {
   role: UserRole;
   permissions: string[];
   status: "ATIVO" | "BLOQUEADO" | "INATIVO";
-  criadoEm: Timestamp | null;
-  atualizadoEm: Timestamp | null;
+  criadoEm: Timestamp;
+  atualizadoEm: Timestamp;
   ultimoAcesso: Timestamp | null;
 }
 
@@ -28,15 +28,16 @@ export interface Frota {
   tipo: string;
   status: StatusFrota;
   justificativaManutencao?: string;
-  createdAt?: Timestamp | null;
+  createdAt?: Timestamp;
   createdBy?: string;
-  updatedAt?: Timestamp | null;
+  updatedAt?: Timestamp;
   updatedBy?: string;
 }
 
+// Para compatibilidade legada enquanto migramos
 export type PranchaStatus = StatusFrota;
 export interface Prancha extends Frota {
-  numero: string;
+  numero: string; // Mapeado de frota
 }
 
 export interface Equipamento {
@@ -72,18 +73,21 @@ export interface Reserva {
   tipoOperacao: "SOLICITACAO" | "LOCACAO_DIRETA";
   status: AgendaStatus;
 
+  // Identidade
   usuarioId?: string | null;
   solicitanteId: string | null;
   solicitanteNome: string;
   solicitante: string;
-  userId?: string | null;
+  userId?: string | null; // Adicionado para consistência Firestore
 
+  // Frota / Equipamento
   pranchaId: string;
   frotaId?: string | null;
   frotaNumero?: string | null;
   equipamentoId: string | null;
   equipamentoNome: string;
 
+  // Logística
   data: string;
   hora: string;
   horarioRetirada: string;
@@ -94,6 +98,7 @@ export interface Reserva {
   frenteId: string;
   frenteTrabalho: string;
 
+  // Operação
   motoristaId: string | null;
   motoristaNome: string;
 
@@ -105,7 +110,7 @@ export interface Reserva {
   finalizadoPor?: string | null;
 
   observacao: string;
-  relatorio: unknown | null;
+  relatorio: string | null;
   motivoRecusa: string;
   createdAt: Timestamp | null;
   testeSistema?: boolean;
@@ -118,7 +123,7 @@ export interface AuditLog {
   acao: string;
   entidade: string;
   entidadeId: string;
-  timestamp: Timestamp | null;
-  dadosAnteriores?: unknown;
-  dadosNovos?: unknown;
+  timestamp: Timestamp;
+  dadosAnteriores?: Record<string, unknown>;
+  dadosNovos?: Record<string, unknown>;
 }

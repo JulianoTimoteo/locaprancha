@@ -9,22 +9,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { AuditLog } from "@/types";
-import { UserProfile } from "@/types";
 
-export function subscribeToAuditLogs(
-  callback: (logs: AuditLog[]) => void,
-  userProfile?: UserProfile | null,
-) {
-  const hasAccess =
-    userProfile &&
-    (userProfile.role === "GOD" ||
-      (userProfile.permissions && userProfile.permissions.includes("auditoria")));
-
-  if (!hasAccess) {
-    callback([]);
-    return () => {};
-  }
-
+/**
+ * Escuta em tempo real a coleção de audit_logs
+ */
+export function subscribeToAuditLogs(callback: (logs: AuditLog[]) => void) {
   const q = query(collection(db, "audit_logs"), orderBy("timestamp", "desc"), limit(15));
 
   return onSnapshot(
@@ -48,7 +37,6 @@ export function subscribeToAuditLogs(
     },
     (error) => {
       console.error("Erro ao assinar audit_logs:", error);
-      callback([]);
     },
   );
 }

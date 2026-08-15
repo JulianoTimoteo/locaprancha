@@ -54,17 +54,16 @@ export function UsuarioList() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-card/40 backdrop-blur-sm p-6 rounded-2xl border border-primary/5 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+          <UserCog size={80} />
+        </div>
         <div>
-          <h1
-            className="text-xl sm:text-2xl font-black tracking-tight uppercase flex items-center gap-2"
-            id="page-title"
-          >
-            <UserCog className="text-primary" /> Gestão de Usuários
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase text-foreground/90 flex items-center gap-3" id="page-title">
+            <UserCog className="text-primary w-8 h-8" /> Gestão de Usuários
           </h1>
-
-          <p className="text-muted-foreground font-medium text-xs sm:text-sm">
-            Controle de acessos e segurança.
+          <p className="text-[10px] sm:text-xs text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-70">
+            Segurança Operacional • Controle de Acessos
           </p>
         </div>
 

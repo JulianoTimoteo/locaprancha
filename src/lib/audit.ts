@@ -18,6 +18,9 @@ export type AuditAction =
   | "RELEASE_FROTA_FROM_WORKSHOP"
   | "STATUS_FROTA_CHANGED"
   | "CREATE_AGENDAMENTO"
+  | "CREATE_RESERVA"
+  | "ALOCACAO_DIRETA"
+  | "ATUALIZAR_STATUS"
   | "CREATE_LOCACAO_DIRETA"
   | "UPDATE_AGENDA_STATUS"
   | "FINISH_LOCACAO"
@@ -30,32 +33,53 @@ export type AuditAction =
   | "DELETE_FRENTE"
   | "SYSTEM_TEST_RUN";
 
+export interface AuditLogPayload {
+  uid: string;
+  usuario: string;
+  acao: AuditAction;
+  entidade: string;
+  entidadeId: string;
+  detalhes?: string;
+  dadosAnteriores?: unknown;
+  dadosNovos?: unknown;
+}
+
 /**
  * Registra uma ação no log de auditoria do Firestore
+ * Suporta tanto o formato antigo (múltiplos argumentos) quanto o novo (objeto único)
  */
 export async function logAction(
-  uid: string,
-  usuario: string,
-  acao: AuditAction,
-  entidade: string,
-  entidadeId: string,
-  dadosAnteriores: any = null,
-  dadosNovos: any = null,
+  payloadOrUid: AuditLogPayload | string,
+  usuario?: string,
+  acao?: AuditAction,
+  entidade?: string,
+  entidadeId?: string,
+  dadosAnteriores: unknown = null,
+  dadosNovos: unknown = null,
 ) {
   try {
-    const logData = {
-      uid,
-      usuario,
-      acao,
-      entidade,
-      entidadeId,
-      timestamp: serverTimestamp(), // SEC-17: Autoridade do servidor para o tempo
-      dadosAnteriores: dadosAnteriores ? JSON.parse(JSON.stringify(dadosAnteriores)) : null,
-      dadosNovos: dadosNovos ? JSON.parse(JSON.stringify(dadosNovos)) : null,
-    };
+    let logData: Record<string, unknown>;
+
+    if (typeof payloadOrUid === "object") {
+      logData = {
+        ...(payloadOrUid as unknown as Record<string, unknown>),
+        timestamp: serverTimestamp(),
+      };
+    } else {
+      logData = {
+        uid: payloadOrUid,
+        usuario: usuario || "Desconhecido",
+        acao: acao || "SYSTEM_TEST_RUN",
+        entidade: entidade || "SISTEMA",
+        entidadeId: entidadeId || "N/A",
+        dadosAnteriores: dadosAnteriores ? JSON.parse(JSON.stringify(dadosAnteriores)) : null,
+        dadosNovos: dadosNovos ? JSON.parse(JSON.stringify(dadosNovos)) : null,
+        timestamp: serverTimestamp(),
+      };
+    }
 
     await addDoc(collection(db, "audit_logs"), logData);
   } catch (error) {
-    console.error("Erro ao registrar log de auditoria:", error);
+    console.error("[AUDIT] Erro ao registrar log de auditoria:", error);
   }
 }

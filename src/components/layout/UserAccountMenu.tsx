@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useConnectionStatus } from "@/hooks/useConnectionStatus";
+import { BUILD_DATE } from "@/lib/utils/storage";
 
 function ConnectionDot() {
   const status = useConnectionStatus();
@@ -119,7 +120,12 @@ export function UserAccountMenu() {
     }
   };
 
-  if (!profile) return null;
+  if (!user) return null;
+
+  const displayName = profile?.nickname || profile?.name || user.email?.split("@")[0] || "GOD";
+  const displayRole = profile?.role || "GOD";
+  const displayStatus = profile?.status || "ATIVO";
+  const displayInitial = (profile?.name || user.email || "G").charAt(0).toUpperCase();
 
   return (
     <>
@@ -129,21 +135,21 @@ export function UserAccountMenu() {
         <DropdownMenuTrigger asChild>
           <button
             className="flex items-center gap-3 pl-1 outline-none group text-left"
-            aria-label={`Menu da conta do usuário ${profile.nickname || profile.name}`}
+            aria-label={`Menu da conta do usuário ${displayName}`}
           >
             <div className="text-right hidden sm:block">
-              <p className="text-xs font-black uppercase tracking-wider leading-none group-hover:text-primary transition-colors">
-                {profile.nickname || profile.name}
+              <p className="text-[10px] font-black uppercase tracking-widest leading-none group-hover:text-primary transition-colors mb-1">
+                {displayName}
               </p>
               <Badge
                 variant="outline"
-                className="mt-1 h-5 text-[9px] font-black border-primary/20 text-primary bg-primary/5"
+                className="h-4 text-[8px] font-black border-primary/20 text-primary/70 bg-primary/5 uppercase px-1.5"
               >
-                {profile.role}
+                {displayRole}
               </Badge>
             </div>
             <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary shadow-sm group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 relative">
-              {(profile.name || "U").charAt(0).toUpperCase()}
+              {displayInitial}
               <ConnectionDot />
             </div>
           </button>
@@ -153,15 +159,14 @@ export function UserAccountMenu() {
           align="end"
           className="w-64 p-2 bg-card/95 backdrop-blur-xl border-primary/10 shadow-2xl"
         >
-          <div className="flex flex-col items-center p-4 mb-2 bg-primary/5 rounded-lg border border-primary/10">
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xl font-black mb-2 shadow-lg shadow-primary/20">
-              {(profile.name || "U").charAt(0).toUpperCase()}
+          <div className="flex flex-col items-center p-4 mb-2 bg-primary/5 rounded-xl border border-primary/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full blur-2xl -mr-8 -mt-8" />
+            <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-black mb-3 shadow-xl shadow-primary/30 relative z-10 border-2 border-background">
+              {displayInitial}
             </div>
-            <span className="font-black text-sm uppercase tracking-tight">
-              {profile.nickname || profile.name}
-            </span>
-            <Badge className="mt-1 text-[10px] font-black bg-primary/20 text-primary hover:bg-primary/20 border-none">
-              {profile.role}
+            <span className="font-black text-xs uppercase tracking-widest relative z-10">{displayName}</span>
+            <Badge className="mt-1.5 text-[9px] font-black bg-primary text-primary-foreground hover:bg-primary border-none px-2 relative z-10">
+              {displayRole}
             </Badge>
           </div>
 
@@ -194,6 +199,12 @@ export function UserAccountMenu() {
             <LogOut size={18} />
             <span>Sair</span>
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator className="bg-primary/10" />
+          <div className="px-2 py-2 text-[8px] font-black text-muted-foreground/40 flex flex-col items-center uppercase tracking-widest border-t border-primary/5 mt-1">
+            <span>Versão 1.9.0 (Premium)</span>
+            <span className="mt-0.5">Build: {BUILD_DATE}</span>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -211,7 +222,7 @@ export function UserAccountMenu() {
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 Nome
               </Label>
-              <p className="font-bold text-lg">{profile.name}</p>
+              <p className="font-bold text-lg">{displayName}</p>
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -219,7 +230,7 @@ export function UserAccountMenu() {
               </Label>
               <div className="flex items-center gap-2">
                 <Mail size={16} className="text-primary/60" />
-                <p className="font-bold">{profile.email}</p>
+                <p className="font-bold">{profile?.email || user.email}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -229,7 +240,7 @@ export function UserAccountMenu() {
                 </Label>
                 <div className="flex items-center gap-2">
                   <Shield size={16} className="text-primary/60" />
-                  <p className="font-black text-primary">{profile.role}</p>
+                  <p className="font-black text-primary">{displayRole}</p>
                 </div>
               </div>
               <div className="space-y-1">
@@ -238,7 +249,7 @@ export function UserAccountMenu() {
                 </Label>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-green-500" />
-                  <p className="font-black text-green-500">{profile.status}</p>
+                  <p className="font-black text-green-500">{displayStatus}</p>
                 </div>
               </div>
             </div>

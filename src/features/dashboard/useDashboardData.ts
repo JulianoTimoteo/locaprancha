@@ -19,28 +19,48 @@ export function useDashboardData() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubFrotas = subscribeToFrotas((data) => {
-      setPranchas(data);
-      persistence.save("frotas", data);
+    let unsubFrotas: (() => void) | undefined;
+    let unsubAgenda: (() => void) | undefined;
+    let unsubLogs: (() => void) | undefined;
+
+    // Conectar em paralelo
+    unsubFrotas = subscribeToFrotas((data) => {
+      setPranchas((prev) => {
+        if (JSON.stringify(data) !== JSON.stringify(prev)) {
+          persistence.save("frotas", data);
+          return data;
+        }
+        return prev;
+      });
     });
 
-    const unsubAgenda = subscribeToAgenda((data) => {
-      setAgenda(data);
-      persistence.save("agenda", data);
-    }, profile);
+    unsubAgenda = subscribeToAgenda((data) => {
+      setAgenda((prev) => {
+        if (JSON.stringify(data) !== JSON.stringify(prev)) {
+          persistence.save("agenda", data);
+          return data;
+        }
+        return prev;
+      });
+    });
 
-    const unsubLogs = subscribeToAuditLogs((data) => {
-      setLogs(data);
-      persistence.save("audit_logs", data);
+    unsubLogs = subscribeToAuditLogs((data) => {
+      setLogs((prev) => {
+        if (JSON.stringify(data) !== JSON.stringify(prev)) {
+          persistence.save("audit_logs", data);
+          return data;
+        }
+        return prev;
+      });
       setLoading(false);
-    }, profile);
+    });
 
     return () => {
       unsubFrotas?.();
       unsubAgenda?.();
       unsubLogs?.();
     };
-  }, [profile]);
+  }, []);
 
   // KPIs baseados na frota real
   const stats = {

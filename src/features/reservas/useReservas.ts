@@ -25,6 +25,7 @@ import { canTransitionTo } from "@/lib/domain/reservaStateMachine";
 import { findFrotaByFrotaField } from "@/lib/firestore/frotas";
 import { isAdmin, isGod, hasPermission } from "@/lib/permissions/permissions";
 import { persistence } from "@/lib/firestore/persistence";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export function useReservas() {
   const [reservas, setReservas] = useState<Reserva[]>(
@@ -32,10 +33,13 @@ export function useReservas() {
   );
   const [loading, setLoading] = useState(!persistence.get("agenda_full"));
   const { profile, user } = useAuth();
+  const { sendNotification } = useNotifications();
 
   useEffect(() => {
+    let isMounted = true;
     const unsubscribe = subscribeToAgenda((data) => {
-      // Ordenação Operacional: Iniciado -> Agendado -> Pendente -> etc. (Instrução 21)
+      if (!isMounted) return;
+
       const sortedData = [...data].sort((a, b) => {
         const order: Record<string, number> = {
           Iniciado: 1,
@@ -58,142 +62,141 @@ export function useReservas() {
         const dateB = b.data || "0000-00-00";
         if (dateA !== dateB) return dateB.localeCompare(dateA);
 
-        const timeA = a.hora || "00:00";
-        const timeB = b.hora || "00:00";
+        const timeA = a.hora || a.horarioRetirada || "00:00";
+        const timeB = b.hora || b.horarioRetirada || "00:00";
         return timeB.localeCompare(timeA);
       });
 
-      setReservas(sortedData);
-      persistence.save("agenda_full", sortedData);
+      setReservas((prevReservas) => {
+        const dataChanged = JSON.stringify(sortedData) !== JSON.stringify(prevReservas);
+        if (dataChanged) {
+          // Notificar mudanças apenas se houver dados novos reais
+          if (prevReservas.length > 0) {
+            sortedData.forEach((curr) => {
+              const prev = prevReservas.find((p) => p.id === curr.id);
+              if (prev && prev.status !== curr.status) {
+                const isSolicitante = curr.solicitanteId === user?.uid;
+                const isRelevantAdmin = isAdmin(profile) || isGod(profile);
+
+                if (isSolicitante || isRelevantAdmin) {
+                  sendNotification(
+                    "Atualização de Reserva",
+                    `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`,
+                  );
+                }
+              }
+            });
+          }
+          persistence.save("agenda_full", sortedData);
+          return sortedData;
+        }
+        return prevReservas;
+      });
       setLoading(false);
     }, profile);
 
-    return () => unsubscribe();
-  }, [profile]);
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [profile, user?.uid, sendNotification]);
 
-  /**
-   * Verifica conflitos de horário diretamente no Firestore (Instrução 13)
-   */
-  const checkConflict = async (
-    pranchaId: string,
-    data: string,
-    start: string,
-    end: string,
-    excludeId?: string,
-  ) => {
-    const q = query(
-      collection(db, "agenda"),
-      where("pranchaId", "==", pranchaId),
-      where("data", "==", data),
-      where("status", "in", ["Pendente", "Agendado", "Aprovado", "Em Trânsito", "Iniciado"]),
-    );
-
-    const snap = await getDocs(q);
-    const conflicts = snap.docs
-      .filter((d) => d.id !== excludeId)
-      .map((d) => {
-        const dData = d.data();
-        return {
-          start: dData["horarioRetirada"] || dData["horaInicio"] || dData["hora"] || "00:00",
-          end: dData["horarioDevolucaoPrevisto"] || dData["horaFim"] || "23:59",
-          solicitante: dData["solicitanteNome"] || dData["solicitante"] || "Desconhecido",
-        };
-      });
-
-    const conflict = conflicts.find((res) => {
-      // Sobreposição real de período (Instrução 13)
-      return start < res.end && end > res.start;
-    });
-
-    return conflict || null;
-  };
-
-  /**
-   * Fluxo de AGENDAMENTO (Instrução 2.2)
-   */
-  const addReserva = async (
-    data: Omit<Reserva, "id" | "createdAt" | "solicitanteId" | "status">,
-  ) => {
-    // Disparar evento global para indicar início de sincronização
-    window.dispatchEvent(new CustomEvent("firestore-sync-start"));
+  const addReserva = async (reservaData: Partial<Reserva>): Promise<string | undefined> => {
+    if (!user || !profile) return;
     try {
-      if (!user || !profile) throw new Error("Not authenticated");
-
-      // 1. Verificar se usuário pode agendar (Instrução 21)
-      const canSchedule = isAdmin(profile) || profile.role === "GOD";
-      if (!canSchedule) {
-        throw new Error("Você não tem permissão para criar agendamentos administrativos.");
-      }
-
-      // 2. Localizar prancha e verificar status
-      const pranchaDoc = await findFrotaByFrotaField(data.pranchaId);
-      if (!pranchaDoc) throw new Error(`Frota ${data.pranchaId} não encontrada.`);
-
-      const pranchaData = pranchaDoc.data();
-      if (normalizeFrotaStatus(pranchaData["status"]) === "OFICINA") {
-        throw new Error("Esta prancha está em manutenção (Oficina).");
-      }
-
-      // 3. Verificar Conflitos
-      const conflict = await checkConflict(
-        data.pranchaId,
-        data.data,
-        data.horarioRetirada,
-        data.horarioDevolucaoPrevisto,
-      );
-      if (conflict) {
-        throw new Error(
-          `⚠️ EQUIPAMENTO JÁ POSSUI CONFLITO\nSolicitante: ${conflict.solicitante}\nPeríodo: ${conflict.start} às ${conflict.end}`,
-        );
-      }
-
-      const resData = {
-        ...data,
-        tipoOperacao: "AGENDAMENTO",
-        solicitanteId: user.uid, // SEC-09: Forçar UID autenticado
-        solicitanteNome: profile.nickname || profile.name,
-        solicitante: profile.nickname || profile.name,
-        status: "Agendado" as const, // SEC-10: Forçar status inicial permitido
+      const payload = {
+        ...reservaData,
+        solicitanteId: user.uid,
+        solicitanteNome: profile.name,
+        solicitante: profile.name,
+        status: "Pendente" as AgendaStatus,
         createdAt: serverTimestamp(),
-        userId: user.uid,
+        updatedAt: serverTimestamp(),
       };
-
-      const docRef = await addDoc(collection(db, "agenda"), resData);
-      await logAction(
-        user.uid,
-        profile.nickname || profile.name,
-        "CREATE_AGENDAMENTO",
-        "agenda",
-        docRef.id,
-        null,
-        resData,
-      );
-
-      toast.success("Agendamento realizado com sucesso!");
+      const docRef = await addDoc(collection(db, "agenda"), payload);
+      await logAction({
+        uid: user.uid,
+        usuario: profile.name,
+        acao: "CREATE_RESERVA",
+        entidade: "agenda",
+        entidadeId: docRef.id,
+        detalhes: `Solicitação criada: ${reservaData.origem || "N/A"} -> ${reservaData.destino || "N/A"}`,
+      });
+      toast.success("Solicitação enviada com sucesso!");
       return docRef.id;
-    } catch (e: any) {
-      if (e.code === "permission-denied") {
-        toast.error(
-          "🚫 Erro de Permissão: Verifique se você é o solicitante ou se possui cargo administrativo.",
-        );
-      } else {
-        toast.error(e.message || "Erro ao solicitar reserva");
-      }
-      throw e;
+    } catch (error: any) {
+      toast.error("Erro ao enviar solicitação.");
+      return undefined;
     }
   };
 
-  /**
-   * Transição de Status com Transação Atômica (Instrução 11)
-   */
+  const alocarDireto = async (reservaData: Partial<Reserva>): Promise<string | undefined> => {
+    if (!user || !profile) return;
+    try {
+      const payload = {
+        ...reservaData,
+        solicitanteId: user.uid,
+        solicitanteNome: profile.name,
+        solicitante: profile.name,
+        status: "Iniciado" as AgendaStatus,
+        createdAt: serverTimestamp(),
+        iniciadoPor: user.uid,
+        iniciadoEm: serverTimestamp(),
+        horarioInicioReal: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        tipoOperacao: "LOCACAO_DIRETA",
+      };
+
+      let newId = "";
+      await runTransaction(db, async (transaction) => {
+        const frotaRef = collection(db, "frotas");
+        const qFrota = query(frotaRef, where("frota", "==", payload.pranchaId));
+        const frotaSnap = await getDocs(qFrota);
+
+        if (frotaSnap.empty) throw new Error("Prancha não encontrada.");
+        const frotaDoc = frotaSnap.docs[0];
+
+        if (normalizeFrotaStatus(frotaDoc.data().status) !== "DISPONÍVEL") {
+          throw new Error("Esta prancha não está disponível no momento.");
+        }
+
+        const agendaRef = doc(collection(db, "agenda"));
+        newId = agendaRef.id;
+        transaction.set(agendaRef, { ...payload, id: newId });
+        transaction.update(frotaDoc.ref, {
+          status: "ALOCADO",
+          updatedAt: serverTimestamp(),
+          updatedBy: user.uid,
+        });
+      });
+
+      await logAction({
+        uid: user.uid,
+        usuario: profile.name,
+        acao: "ALOCACAO_DIRETA",
+        entidade: "agenda",
+        entidadeId: newId,
+        detalhes: `Alocação direta de ${payload.pranchaId}`,
+      });
+      toast.success("Equipamento alocado e serviço iniciado!");
+      return newId;
+    } catch (error: any) {
+      if (error.code === "permission-denied") {
+        toast.error("🚫 Erro de Permissão: Apenas administradores podem alocar diretamente.");
+      } else {
+        toast.error("Erro ao processar alocação.");
+      }
+      return undefined;
+    }
+  };
+
   const updateReservaStatus = async (id: string, status: AgendaStatus, extraData: any = {}) => {
-    window.dispatchEvent(new CustomEvent("firestore-sync-start"));
     try {
       if (!user || !profile) return;
 
       const isUserAdmin = isAdmin(profile) || isGod(profile);
 
-      // Validação de Permissão (Instrução 21)
+      // Validação de Permissão
       if (status === "Aprovado" && !isUserAdmin) {
         throw new Error("Somente administradores podem aprovar solicitações.");
       }
@@ -226,8 +229,11 @@ export function useReservas() {
         if (status === "Aprovado") {
           updates.aprovadoEm = serverTimestamp();
           updates.aprovadoPor = user.uid;
+          if (extraData.id) {
+            updates.motoristaId = extraData.id;
+            updates.motoristaNome = extraData.nome;
+          }
         } else if (status === "Iniciado") {
-          // 1. Verificar disponibilidade da prancha NA TRANSAÇÃO
           const pranchaDoc = await findFrotaByFrotaField(oldReserva.pranchaId);
           if (!pranchaDoc) throw new Error("Prancha não encontrada.");
 
@@ -248,15 +254,15 @@ export function useReservas() {
           updates.finalizadoEm = serverTimestamp();
           updates.finalizadoPor = user.uid;
           updates.horarioFimReal = serverTimestamp();
-          if (extraData.relatorio) updates.relatorio = extraData.relatorio;
+          if (extraData.relatorio || extraData)
+            updates.relatorio = extraData.relatorio || extraData;
 
           // Liberar prancha
           const pranchaDoc = await findFrotaByFrotaField(oldReserva.pranchaId);
           if (pranchaDoc) {
             transaction.update(doc(db, "frotas", pranchaDoc.id), { status: "DISPONÍVEL" });
           }
-        } else if (status === "Cancelado") {
-          // Se estava alocado/iniciado, libera a prancha
+        } else if (status === "Cancelado" || status === "Recusado") {
           if (
             oldReserva.status === "Iniciado" ||
             oldReserva.status === "Em Trânsito" ||
@@ -267,127 +273,34 @@ export function useReservas() {
               transaction.update(doc(db, "frotas", pranchaDoc.id), { status: "DISPONÍVEL" });
             }
           }
-          if (extraData.motivo) updates.motivoRecusa = extraData.motivo;
+          if (extraData.motivo || extraData.nome)
+            updates.motivoRecusa = extraData.motivo || extraData.nome;
         }
 
         transaction.update(reservaRef, updates);
       });
 
-      const action =
-        status === "Cancelado"
-          ? "CANCEL_LOCACAO"
-          : status === "Finalizado" || status === "Concluído"
-            ? "FINISH_LOCACAO"
-            : "UPDATE_AGENDA_STATUS";
-      await logAction(
-        user.uid,
-        profile.nickname || profile.name,
-        action as any,
-        "agenda",
-        id,
-        { status: oldReserva.status },
-        { status },
-      );
-      toast.success(`Status atualizado para ${status}`);
-    } catch (e: any) {
-      if (e.code === "permission-denied") {
-        toast.error("🚫 Você não possui permissão para realizar esta operação.");
-      } else {
-        toast.error(e.message || "Erro ao atualizar operação");
-      }
-    }
-  };
-
-  /**
-   * Fluxo de LOCAÇÃO DIRETA (Instrução 2.1 e 11)
-   */
-  const alocarDireto = async (data: any) => {
-    // Disparar evento global para indicar início de sincronização
-    window.dispatchEvent(new CustomEvent("firestore-sync-start"));
-    try {
-      if (!user || !profile) throw new Error("Not authenticated");
-
-      // 1. Verificar permissão para alocar (Instrução 21)
-      if (!hasPermission(profile, "reservas")) {
-        throw new Error("Você não tem permissão para realizar alocações diretas.");
-      }
-
-      console.info("[AGENDA] Iniciando transação de Locação Direta para:", data.pranchaId);
-
-      const result = await runTransaction(db, async (transaction) => {
-        // 1. Validação Crítica da Prancha
-        const pranchaDocSnapshot = await findFrotaByFrotaField(data.pranchaId);
-        if (!pranchaDocSnapshot) throw new Error(`Prancha ${data.pranchaId} não encontrada.`);
-
-        const pranchaData = pranchaDocSnapshot.data();
-        const pStatus = normalizeFrotaStatus(pranchaData["status"]);
-
-        if (pStatus !== "DISPONÍVEL") {
-          throw new Error(
-            `Prancha ${data.pranchaId} não está disponível (Status atual: ${pStatus}).`,
-          );
-        }
-
-        // 2. Verificar Conflitos (mesmo para locação direta, para garantir integridade)
-        const conflict = await checkConflict(
-          data.pranchaId,
-          data.data,
-          data.horarioRetirada,
-          data.horarioDevolucaoPrevisto,
-        );
-        if (conflict) {
-          throw new Error(
-            `Conflito detectado com ${conflict.solicitante} (${conflict.start}-${conflict.end})`,
-          );
-        }
-
-        const agendaId = doc(collection(db, "agenda")).id;
-        const agendaRef = doc(db, "agenda", agendaId);
-
-        const resData = {
-          ...data,
-          tipoOperacao: "LOCACAO_DIRETA",
-          solicitanteId: user.uid, // SEC-09: Forçar UID autenticado
-          userId: user.uid,
-          solicitanteNome: profile.nickname || profile.name,
-          solicitante: profile.nickname || profile.name,
-          status: "Iniciado", // SEC-13: Status inicial operacional
-          createdAt: serverTimestamp(),
-          iniciadoEm: serverTimestamp(),
-          iniciadoPor: user.uid,
-          horarioInicioReal: serverTimestamp(),
-        };
-
-        // 3. Executar Writes Atômicos
-        transaction.set(agendaRef, resData);
-        transaction.update(doc(db, "frotas", pranchaDocSnapshot.id), { status: "ALOCADO" });
-
-        // 4. Auditoria via Transação (para garantir registro)
-        const auditRef = doc(collection(db, "audit_logs"));
-        transaction.set(auditRef, {
-          uid: user.uid,
-          usuario: profile.nickname || profile.name,
-          acao: "CREATE_LOCACAO_DIRETA",
-          entidade: "agenda",
-          entidadeId: agendaId,
-          timestamp: serverTimestamp(),
-          dadosNovos: resData,
-        });
-
-        return agendaId;
+      await logAction({
+        uid: user.uid,
+        usuario: profile.name,
+        acao: "ATUALIZAR_STATUS",
+        entidade: "agenda",
+        entidadeId: id,
+        detalhes: `Status alterado de ${oldReserva.status} para ${status}`,
       });
 
-      toast.success("🚜 Prancha alocada com sucesso!");
-      return result;
+      toast.success(`Status atualizado para ${status}`);
     } catch (e: any) {
-      if (e.code === "permission-denied") {
-        toast.error("🚫 Erro de Segurança: A alocação direta foi bloqueada pelas regras do banco.");
-      } else {
-        toast.error(e.message || "Erro ao realizar alocação direta");
-      }
-      throw e;
+      toast.error(e.message || "Erro ao atualizar operação");
     }
   };
 
-  return { reservas, loading, addReserva, updateReservaStatus, alocarDireto };
+  return {
+    reservas,
+    loading,
+    addReserva,
+    alocarDireto,
+    updateReservaStatus,
+    atualizarStatus: updateReservaStatus,
+  };
 }
