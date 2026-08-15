@@ -99,7 +99,7 @@ export function useReservas() {
       isMounted = false;
       unsubscribe();
     };
-  }, [profile?.uid, profile?.role, user?.uid, sendNotification]);
+  }, [profile, user?.uid, sendNotification]);
 
   const addReserva = async (reservaData: Partial<Reserva>): Promise<string | undefined> => {
     if (!user || !profile) return;
