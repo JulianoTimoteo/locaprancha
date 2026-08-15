@@ -36,28 +36,31 @@ export function useReservas() {
   const { sendNotification } = useNotifications();
 
   useEffect(() => {
+    let isMounted = true;
     const unsubscribe = subscribeToAgenda((data) => {
-      // Notificar mudanças de status para o usuário logado
+      if (!isMounted) return;
+
+      // Obter dados anteriores de forma estável (evita depender da variável reservas do hook que muda a cada render)
       const prevData = persistence.get<Reserva[]>("agenda_full") || [];
+      
+      // Notificar mudanças apenas se houver dados novos reais
       if (prevData.length > 0) {
         data.forEach((curr) => {
           const prev = prevData.find((p) => p.id === curr.id);
           if (prev && prev.status !== curr.status) {
-            // Notificar se for o solicitante ou se for admin
             const isSolicitante = curr.solicitanteId === user?.uid;
             const isRelevantAdmin = isAdmin(profile) || isGod(profile);
 
             if (isSolicitante || isRelevantAdmin) {
               sendNotification(
                 "Atualização de Reserva",
-                `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`,
+                `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`
               );
             }
           }
         });
       }
 
-      // Ordenação Operacional: Iniciado -> Em Trânsito -> Agendado -> Pendente -> etc.
       const sortedData = [...data].sort((a, b) => {
         const order: Record<string, number> = {
           Iniciado: 1,
@@ -85,13 +88,19 @@ export function useReservas() {
         return timeB.localeCompare(timeA);
       });
 
-      setReservas(sortedData);
-      persistence.save("agenda_full", sortedData);
-      setLoading(false);
+      // Só atualiza o estado se os dados realmente mudaram para evitar loops de render
+      if (JSON.stringify(sortedData) !== JSON.stringify(prevData)) {
+        setReservas(sortedData);
+        persistence.save("agenda_full", sortedData);
+        setLoading(false);
+      }
     }, profile);
 
-    return () => unsubscribe();
-  }, [profile, user?.uid, sendNotification]);
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [profile?.uid, profile?.role, user?.uid, sendNotification]);
 
   const addReserva = async (reservaData: Partial<Reserva>): Promise<string | undefined> => {
     if (!user || !profile) return;
