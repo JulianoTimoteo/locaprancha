@@ -24,7 +24,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { AuthLoader } from "@/components/auth/AuthLoader";
-import logoAsset from "@/assets/logo-pitangueiras.png.asset.json";
 import { autoMigrateProfile } from "@/lib/firestore/migration";
 
 export function LoginPage() {
@@ -141,19 +140,22 @@ export function LoginPage() {
 
       // 3. Auto-Migração / Auto-Vínculo (Instrução: Criar automaticamente)
       // Se o perfil existir com ID antigo mas mesmo email, ele é migrado para usuarios/{UID}
-      await autoMigrateProfile(user);
+      try {
+        await autoMigrateProfile(user);
 
-      // 4. Registro de Último Acesso (Respeitando a Regra de Identidade usuarios/{UID})
-      const userDocRef = doc(db, "usuarios", user.uid);
-      await setDoc(
-        userDocRef,
-        {
-          ultimoAcesso: serverTimestamp(),
-          uid: user.uid,
-          email: user.email,
-        },
-        { merge: true },
-      );
+        const userDocRef = doc(db, "usuarios", user.uid);
+        await setDoc(
+          userDocRef,
+          {
+            ultimoAcesso: serverTimestamp(),
+            uid: user.uid,
+            email: user.email,
+          },
+          { merge: true },
+        );
+      } catch (firestoreError) {
+        console.error("Erro ao atualizar dados do usuário:", firestoreError);
+      }
 
       toast.success("Bem-vindo ao Locaprancha!");
       setLoading(false);
@@ -203,12 +205,9 @@ export function LoginPage() {
         <div className="relative z-10 w-full max-w-lg mx-auto text-center flex flex-col items-center animate-in fade-in slide-in-from-left-8 duration-700">
           <div className="w-full max-w-[320px] sm:max-w-[400px] mb-6 transition-all duration-500 hover:scale-105">
             <img
-              src={logoAsset.url}
+              src={import.meta.env.BASE_URL + "logo-pitangueiras.png"}
               alt="Logo Usina Pitangueiras"
               className="w-full h-auto object-contain filter drop-shadow-2xl"
-              onError={(e) => {
-                e.currentTarget.src = "/logo-pitangueiras.png";
-              }}
             />
           </div>
           <div className="space-y-4">
@@ -244,12 +243,9 @@ export function LoginPage() {
           <div className="lg:hidden flex flex-col items-center mb-8">
             <div className="w-full max-w-[240px] mb-4">
               <img
-                src={logoAsset.url}
+                src={import.meta.env.BASE_URL + "logo-pitangueiras.png"}
                 alt="Logo Usina Pitangueiras"
                 className="w-full h-auto object-contain"
-                onError={(e) => {
-                  e.currentTarget.src = "/logo-pitangueiras.png";
-                }}
               />
             </div>
             <h1 className="flex flex-col items-center font-black tracking-tight leading-[0.85] select-none">

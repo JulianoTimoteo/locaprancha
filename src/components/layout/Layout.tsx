@@ -24,7 +24,6 @@ import { AuthLoader } from "@/components/auth/AuthLoader";
 import { PWAInstallPrompt } from "./PWAInstallPrompt";
 import { ConnectionBanner } from "./ConnectionBanner";
 import { RadialMenu } from "./RadialMenu";
-import logoAsset from "@/assets/logo-pitangueiras.png.asset.json";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -71,12 +70,9 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
           <div className="flex flex-col items-center mb-8 group relative">
             <div className="w-56 h-56 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 z-10">
               <img
-                src={logoAsset.url}
+                src={import.meta.env.BASE_URL + "logo-pitangueiras.png"}
                 alt="Logo Usina Pitangueiras"
                 className="w-full h-full object-contain filter drop-shadow-2xl"
-                onError={(e) => {
-                  e.currentTarget.src = "/logo-pitangueiras.png";
-                }}
               />
             </div>
             <div className="flex flex-col items-center -mt-10 z-20">
@@ -141,12 +137,9 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
           <div className="flex items-center gap-3 lg:hidden">
             <div className="w-16 h-16 flex items-center justify-center overflow-hidden">
               <img
-                src={logoAsset.url}
+                src={import.meta.env.BASE_URL + "logo-pitangueiras.png"}
                 alt="Logo Usina Pitangueiras"
                 className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.src = "/logo-pitangueiras.png";
-                }}
               />
             </div>
             <span className="text-xl font-black tracking-tighter">
