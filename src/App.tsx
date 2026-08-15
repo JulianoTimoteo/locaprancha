@@ -97,13 +97,15 @@ export default function App() {
 
   useEffect(() => {
     if (user && profile && currentView === "dashboard") {
-      // Garantir que estamos no dashboard ao logar se já não estivermos navegando
       const params = new URLSearchParams(window.location.search);
       if (!params.get("view")) {
-        handleNavigate("dashboard");
+        // Usar a URL diretamente em vez de pushState se possível para evitar triggers circulares
+        const url = new URL(window.location.href);
+        url.searchParams.set("view", "dashboard");
+        window.history.replaceState({ view: "dashboard" }, "", url.toString());
       }
     }
-  }, [user, !!profile, currentView]);
+  }, [user?.uid, !!profile]);
 
   if (loading && !profile) {
     return (
