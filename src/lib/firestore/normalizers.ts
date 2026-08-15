@@ -9,6 +9,7 @@ import {
   AuditLog,
   StatusFrota,
 } from "@/types";
+import { Timestamp } from "firebase/firestore";
 
 /**
  * Normaliza o Role do usuário para garantir que seja um valor válido do enum UserRole
