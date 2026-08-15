@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStatus("PROFILE_OK");
       }
     }
-  }, [profile]);
+  }, [profile?.uid, profile?.status]);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | undefined;
