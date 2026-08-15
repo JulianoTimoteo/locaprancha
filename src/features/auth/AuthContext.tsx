@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return prevStatus;
       });
     }
-  }, [profile?.uid, profile?.status]);
+  }, [profile]);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | undefined;
