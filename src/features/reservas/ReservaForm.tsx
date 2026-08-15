@@ -100,7 +100,6 @@ export function ReservaForm({
       if (isAlocacaoDireta && alocarDireto) {
         await alocarDireto(payload);
       } else {
-        // @ts-expect-error payload type mismatch between addReserva and alocarDireto
         await addReserva(payload);
       }
 

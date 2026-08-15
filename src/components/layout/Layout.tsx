@@ -38,24 +38,10 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
   const { profile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [pushStatus, setPushStatus] = useState<string>("default");
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     return (localStorage.getItem("theme") as "light" | "dark") || "light";
   });
-
-  React.useEffect(() => {
-    if ("Notification" in window) {
-      setPushStatus(Notification.permission);
-    }
-  }, []);
-
-  const handleRequestPush = async () => {
-    if ("Notification" in window) {
-      const permission = await Notification.requestPermission();
-      setPushStatus(permission);
-    }
-  };
 
   React.useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -69,8 +55,9 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
     { id: "equipamentos", label: "Equipamentos", icon: Truck },
     { id: "frentes", label: "Frentes", icon: MapPin },
     { id: "relatorios", label: "Relatórios", icon: BarChart },
-    // { id: "analise-coa", label: "Análise COA", icon: BarChart3 }, // Removido conforme solicitação do usuário
+    { id: "analise-coa", label: "Análise COA", icon: BarChart3 },
     { id: "usuarios", label: "Usuários", icon: Users },
+    { id: "auditoria", label: "Auditoria", icon: ShieldCheck },
   ];
 
   const filteredMenu = menuItems.filter((item) => canAccessTab(profile, item.id));
@@ -82,11 +69,11 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
 
       {/* Sidebar Desktop */}
       <aside
-        className={cn("hidden lg:flex flex-col w-72 bg-card border-r shadow-2xl z-40 transition-all duration-300")}
+        className={cn("hidden lg:flex flex-col w-64 bg-card border-r transition-all duration-300")}
       >
         <div className="p-6 flex flex-col h-full">
-          <div className="flex flex-col items-center mb-6 group relative pt-2">
-            <div className="w-48 h-48 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 z-10">
+          <div className="flex flex-col items-center mb-8 group relative">
+            <div className="w-56 h-56 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 z-10">
               <img
                 src={logoAsset.url}
                 alt="Logo Usina Pitangueiras"
@@ -94,11 +81,9 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                 onError={(e) => (e.currentTarget.style.display = "none")}
               />
             </div>
-            <div className="flex flex-col items-center -mt-8 z-20">
+            <div className="flex flex-col items-center -mt-10 z-20">
               <h1 className="font-black tracking-tighter select-none">
-                <span className="text-black dark:text-white text-2xl sm:text-3xl font-black">
-                  LOCA
-                </span>
+                <span className="text-black dark:text-white text-2xl sm:text-3xl">LOCA</span>
                 <span className="text-[#40800c] text-2xl sm:text-3xl">PRANCHA</span>
               </h1>
               <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/60 mt-1">
@@ -164,14 +149,14 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
               />
             </div>
             <span className="text-xl font-black tracking-tighter">
-              <span className="text-black dark:text-white font-black">LOCA</span>
-              <span className="text-[#40800c] font-black">PRANCHA</span>
+              <span className="text-black dark:text-white">LOCA</span>
+              <span className="text-[#40800c]">PRANCHA</span>
             </span>
           </div>
 
-          <div className="flex-1 hidden lg:block overflow-hidden">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 whitespace-nowrap block">
-              Usina Pitangueiras • Unidade Operacional • {menuItems.find((i) => i.id === activeView)?.label || "Operação"}
+          <div className="flex-1 hidden lg:block">
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+              Usina Pitangueiras • {menuItems.find((i) => i.id === activeView)?.label || "Operação"}
             </span>
           </div>
 
@@ -194,24 +179,12 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
 
             <div className="h-8 w-[1px] bg-border mx-1" />
 
-            {pushStatus === "default" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs font-bold gap-2 text-primary hidden md:flex"
-                onClick={handleRequestPush}
-              >
-                <Palette className="w-4 h-4" />
-                ATIVAR NOTIFICAÇÕES
-              </Button>
-            )}
-
             <UserAccountMenu />
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto pb-28 lg:pb-8 custom-scrollbar w-full relative">
-          <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6 w-full min-h-full">{children}</div>
+        <main className="flex-1 overflow-y-auto pb-24 lg:pb-6 custom-scrollbar w-full">
+          <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6 w-full">{children}</div>
         </main>
 
         {/* Bottom Navigation Mobile */}
@@ -253,7 +226,15 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       icon: BarChart,
                       active: activeView === "relatorios",
                       onClick: () => onNavigate("relatorios"),
-                      hidden: !isGod(profile) && !canAccessTab(profile, "relatorios"),
+                      hidden: !canAccessTab(profile, "relatorios"),
+                    },
+                    {
+                      id: "auditoria",
+                      label: "Auditoria",
+                      icon: ShieldCheck,
+                      active: activeView === "auditoria",
+                      onClick: () => onNavigate("auditoria"),
+                      hidden: !isGod(profile),
                     },
                     {
                       id: "usuarios",
@@ -261,7 +242,7 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       icon: Users,
                       active: activeView === "usuarios",
                       onClick: () => onNavigate("usuarios"),
-                      hidden: !isGod(profile) && !canAccessTab(profile, "usuarios"),
+                      hidden: !canAccessTab(profile, "usuarios"),
                     },
                     {
                       id: "frentes",
@@ -269,7 +250,7 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       icon: MapPin,
                       active: activeView === "frentes",
                       onClick: () => onNavigate("frentes"),
-                      hidden: !isGod(profile) && !canAccessTab(profile, "frentes"),
+                      hidden: !canAccessTab(profile, "frentes"),
                     },
                     {
                       id: "equipamentos",
@@ -277,7 +258,7 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       icon: HardHat,
                       active: activeView === "equipamentos",
                       onClick: () => onNavigate("equipamentos"),
-                      hidden: !isGod(profile) && !canAccessTab(profile, "equipamentos"),
+                      hidden: !canAccessTab(profile, "equipamentos"),
                     },
                   ]
                     .filter((i) => !i.hidden)

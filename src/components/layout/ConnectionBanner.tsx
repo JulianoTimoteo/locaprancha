@@ -43,8 +43,8 @@ export function ConnectionBanner() {
       role="alert"
       aria-live="polite"
       className={cn(
-        "fixed top-4 left-1/2 -translate-x-1/2 z-[250] flex items-center gap-3 px-5 py-2.5 rounded-full bg-card/80 backdrop-blur-2xl border border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all duration-500 animate-in fade-in slide-in-from-top-4 ring-1 ring-white/10",
-        status !== "online" && "ring-2 ring-primary/30 scale-105",
+        "fixed top-4 left-1/2 -translate-x-1/2 z-[250] flex items-center gap-3 px-4 py-2 rounded-2xl bg-card/95 backdrop-blur-xl border border-primary/20 shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-top-4",
+        status !== "online" && "ring-2 ring-primary/20",
       )}
     >
       <div className="flex items-center gap-2">

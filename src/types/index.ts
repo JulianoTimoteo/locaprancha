@@ -1,5 +1,3 @@
-import { Timestamp } from "firebase/firestore";
-
 export type UserRole = "GOD" | "ADMINISTRADOR" | "LIDER" | "MOTORISTA" | "SOLICITANTE";
 
 export interface UserProfile {
@@ -11,9 +9,9 @@ export interface UserProfile {
   role: UserRole;
   permissions: string[];
   status: "ATIVO" | "BLOQUEADO" | "INATIVO";
-  criadoEm: Timestamp;
-  atualizadoEm: Timestamp;
-  ultimoAcesso: Timestamp | null;
+  criadoEm: any;
+  atualizadoEm: any;
+  ultimoAcesso: any | null;
 }
 
 export type StatusFrota = "DISPONÍVEL" | "ALOCADO" | "OFICINA";
@@ -28,9 +26,9 @@ export interface Frota {
   tipo: string;
   status: StatusFrota;
   justificativaManutencao?: string;
-  createdAt?: Timestamp;
+  createdAt?: any;
   createdBy?: string;
-  updatedAt?: Timestamp;
+  updatedAt?: any;
   updatedBy?: string;
 }
 
@@ -102,17 +100,17 @@ export interface Reserva {
   motoristaId: string | null;
   motoristaNome: string;
 
-  horarioInicioReal: Timestamp | null;
-  horarioFimReal: Timestamp | null;
-  iniciadoEm?: Timestamp | null;
+  horarioInicioReal: any | null;
+  horarioFimReal: any | null;
+  iniciadoEm?: any | null;
   iniciadoPor?: string | null;
-  finalizadoEm?: Timestamp | null;
+  finalizadoEm?: any | null;
   finalizadoPor?: string | null;
 
   observacao: string;
-  relatorio: string | null;
+  relatorio: any | null;
   motivoRecusa: string;
-  createdAt: Timestamp | null;
+  createdAt: any | null;
   testeSistema?: boolean;
 }
 
@@ -123,7 +121,7 @@ export interface AuditLog {
   acao: string;
   entidade: string;
   entidadeId: string;
-  timestamp: Timestamp;
-  dadosAnteriores?: Record<string, unknown>;
-  dadosNovos?: Record<string, unknown>;
+  timestamp: any;
+  dadosAnteriores?: any;
+  dadosNovos?: any;
 }

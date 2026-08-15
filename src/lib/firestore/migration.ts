@@ -17,10 +17,7 @@ import { logAction } from "@/lib/audit";
  * Um perfil é considerado órfão se o seu documento ID (normalmente nickname ou string manual)
  * NÃO for igual ao UID do Auth, mas o campo 'email' coincidir.
  */
-export async function autoMigrateProfile(authUser: {
-  email?: string | null;
-  uid: string;
-}): Promise<boolean> {
+export async function autoMigrateProfile(authUser: any): Promise<boolean> {
   if (!authUser || !authUser.email || !authUser.uid) return false;
 
   try {
@@ -47,8 +44,6 @@ export async function autoMigrateProfile(authUser: {
       const oldId = oldDoc.id;
 
       if (oldId === authUser.uid) return true;
-
-      console.log(`[AUTO-MIGRATION] Migrando perfil de ${oldId} para ${authUser.uid}`);
 
       // 3. Criar o novo documento com ID = UID
       const newData = {

@@ -1,14 +1,10 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import {
-  doc,
-  onSnapshot,
-} from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { UserProfile } from "@/types";
 import { normalizeUserProfile } from "@/lib/firestore/normalizers";
 import { persistence } from "@/lib/firestore/persistence";
-
 
 export type AuthStatus =
   | "LOADING"

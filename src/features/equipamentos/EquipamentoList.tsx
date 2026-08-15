@@ -39,7 +39,6 @@ export function EquipamentoList() {
     updateEquipamento,
     deleteEquipamento,
     seedEquipamentos,
-    cleanupDuplicates,
   } = useEquipamentos();
   const { frentes } = useFrentes();
   const { profile } = useAuth();
@@ -106,14 +105,11 @@ export function EquipamentoList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-card/40 backdrop-blur-sm p-6 rounded-2xl border border-primary/5 shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-          <Truck size={80} />
-        </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase text-foreground/90 flex items-center gap-3" id="page-title">
-              <Truck className="text-primary w-8 h-8" /> Equipamentos
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight uppercase" id="page-title">
+              Equipamentos
             </h1>
 
             <TooltipProvider>
@@ -164,8 +160,8 @@ export function EquipamentoList() {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <p className="text-[10px] sm:text-xs text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-70">
-            Ativos Operacionais • Inventário Usina
+          <p className="text-muted-foreground font-medium text-xs sm:text-sm">
+            Gerenciamento de máquinas e ativos operacionais.
           </p>
         </div>
 
@@ -178,20 +174,6 @@ export function EquipamentoList() {
                 className="flex-1 sm:flex-initial gap-2 font-bold tracking-widest uppercase border-primary/20 hover:bg-primary/5"
               >
                 Importar Iniciais
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={async () => {
-                  if (confirm("Deseja remover todos os registros duplicados agora?")) {
-                    const count = await cleanupDuplicates();
-                    alert(
-                      count > 0 ? `${count} duplicados removidos!` : "Nenhum duplicado encontrado.",
-                    );
-                  }
-                }}
-                className="flex-1 sm:flex-initial gap-2 font-bold tracking-widest uppercase border-red-500/20 hover:bg-red-500/10"
-              >
-                Limpar Duplicados
               </Button>
               <Button
                 onClick={() => handleOpenForm()}

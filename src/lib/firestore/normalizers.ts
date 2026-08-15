@@ -9,12 +9,11 @@ import {
   AuditLog,
   StatusFrota,
 } from "@/types";
-import { Timestamp } from "firebase/firestore";
 
 /**
  * Normaliza o Role do usuário para garantir que seja um valor válido do enum UserRole
  */
-export function normalizeUserRole(role: unknown): UserRole {
+export function normalizeUserRole(role: any): UserRole {
   const validRoles: UserRole[] = ["GOD", "ADMINISTRADOR", "LIDER", "MOTORISTA", "SOLICITANTE"];
   if (validRoles.includes(role as UserRole)) {
     return role as UserRole;
@@ -25,7 +24,7 @@ export function normalizeUserRole(role: unknown): UserRole {
 /**
  * Normaliza uma string garantindo que nunca seja nula
  */
-export function normalizeString(val: unknown, fallback: string = ""): string {
+export function normalizeString(val: any, fallback: string = ""): string {
   if (val === null || val === undefined) return fallback;
   return String(val).trim();
 }
@@ -33,7 +32,7 @@ export function normalizeString(val: unknown, fallback: string = ""): string {
 /**
  * Normaliza o status da frota
  */
-export function normalizeFrotaStatus(status: unknown): StatusFrota {
+export function normalizeFrotaStatus(status: any): StatusFrota {
   const s = normalizeString(status).toUpperCase();
   if (s.includes("DISP")) return "DISPONÍVEL";
   if (s.includes("ALOC") || s.includes("OCUP")) return "ALOCADO";
@@ -44,101 +43,101 @@ export function normalizeFrotaStatus(status: unknown): StatusFrota {
 /**
  * Normaliza um documento de Frota
  */
-export function normalizeFrota(id: string, data: Record<string, unknown>): Frota {
+export function normalizeFrota(id: string, data: any): Frota {
   return {
     id,
-    frota: (data.frota as string) || (data.numero as string) || id,
-    placa: (data.placa as string) || "",
-    marca: (data.marca as string) || "",
-    modelo: (data.modelo as string) || "",
-    nome: (data.nome as string) || "",
-    tipo: (data.tipo as string) || "",
+    frota: data.frota || data.numero || id,
+    placa: data.placa || "",
+    marca: data.marca || "",
+    modelo: data.modelo || "",
+    nome: data.nome || "",
+    tipo: data.tipo || "",
     status: normalizeFrotaStatus(data.status),
-    justificativaManutencao: (data.justificativaManutencao as string) || "",
-    createdAt: (data.createdAt as Timestamp) || null,
-    createdBy: (data.createdBy as string) || "",
-    updatedAt: (data.updatedAt as Timestamp) || null,
-    updatedBy: (data.updatedBy as string) || "",
+    justificativaManutencao: data.justificativaManutencao || "",
+    createdAt: data.createdAt || null,
+    createdBy: data.createdBy || "",
+    updatedAt: data.updatedAt || null,
+    updatedBy: data.updatedBy || "",
   };
 }
 
 /**
  * Normaliza um documento de Reserva vindo do Firestore
  */
-export function normalizeReserva(id: string, data: Record<string, unknown>): Reserva {
+export function normalizeReserva(id: string, data: any): Reserva {
   return {
     id,
-    tipoOperacao: (data.tipoOperacao as Reserva["tipoOperacao"]) || "SOLICITACAO",
-    status: (data.status as AgendaStatus) || "Pendente",
-    solicitanteId: (data.solicitanteId as string) || null,
-    solicitanteNome: (data.solicitanteNome as string) || "",
-    solicitante: (data.solicitante as string) || (data.solicitanteNome as string) || "",
-    pranchaId: (data.pranchaId as string) || "",
-    frotaId: (data.frotaId as string) || null,
-    frotaNumero: (data.frotaNumero as string) || null,
-    equipamentoId: (data.equipamentoId as string) || null,
-    equipamentoNome: (data.equipamentoNome as string) || "",
-    data: (data.data as string) || "",
-    hora: (data.hora as string) || "",
-    horarioRetirada: (data.horarioRetirada as string) || "",
-    horarioDevolucaoPrevisto: (data.horarioDevolucaoPrevisto as string) || "",
-    origem: (data.origem as string) || "",
-    destino: (data.destino as string) || "",
-    frenteId: (data.frenteId as string) || "",
-    frenteTrabalho: (data.frenteTrabalho as string) || "",
-    motoristaId: (data.motoristaId as string) || null,
-    motoristaNome: (data.motoristaNome as string) || "",
-    horarioInicioReal: (data.horarioInicioReal as Timestamp) || null,
-    horarioFimReal: (data.horarioFimReal as Timestamp) || null,
-    observacao: (data.observacao as string) || "",
-    motivoRecusa: (data.motivoRecusa as string) || "",
-    createdAt: (data.createdAt as Timestamp) || null,
-    relatorio: (data.relatorio as string) || null,
+    tipoOperacao: data.tipoOperacao || "SOLICITACAO",
+    status: data.status || "Pendente",
+    solicitanteId: data.solicitanteId || null,
+    solicitanteNome: data.solicitanteNome || "",
+    solicitante: data.solicitante || data.solicitanteNome || "",
+    pranchaId: data.pranchaId || "",
+    frotaId: data.frotaId || null,
+    frotaNumero: data.frotaNumero || null,
+    equipamentoId: data.equipamentoId || null,
+    equipamentoNome: data.equipamentoNome || "",
+    data: data.data || "",
+    hora: data.hora || "",
+    horarioRetirada: data.horarioRetirada || "",
+    horarioDevolucaoPrevisto: data.horarioDevolucaoPrevisto || "",
+    origem: data.origem || "",
+    destino: data.destino || "",
+    frenteId: data.frenteId || "",
+    frenteTrabalho: data.frenteTrabalho || "",
+    motoristaId: data.motoristaId || null,
+    motoristaNome: data.motoristaNome || "",
+    horarioInicioReal: data.horarioInicioReal || null,
+    horarioFimReal: data.horarioFimReal || null,
+    observacao: data.observacao || "",
+    motivoRecusa: data.motivoRecusa || "",
+    createdAt: data.createdAt || null,
+    relatorio: data.relatorio || null,
   };
 }
 
 /**
  * Normaliza um documento de Usuário
  */
-export function normalizeUserProfile(id: string, data: Record<string, unknown>): UserProfile {
+export function normalizeUserProfile(id: string, data: any): UserProfile {
   return {
     uid: id,
-    name: (data.name as string) || (data.displayName as string) || "",
-    nickname: (data.nickname as string) || "",
-    email: (data.email as string) || "",
-    emailTipo: (data.emailTipo as UserProfile["emailTipo"]) || "REAL",
+    name: data.name || data.displayName || "",
+    nickname: data.nickname || "",
+    email: data.email || "",
+    emailTipo: data.emailTipo || "REAL",
     role: normalizeUserRole(data.role),
     permissions: Array.isArray(data.permissions) ? data.permissions : [],
-    status: (data.status as UserProfile["status"]) || "ATIVO",
-    criadoEm: (data.criadoEm || data.createdAt) as Timestamp,
-    atualizadoEm: (data.atualizadoEm || data.updatedAt) as Timestamp,
-    ultimoAcesso: (data.ultimoAcesso as Timestamp) || null,
+    status: data.status || "ATIVO",
+    criadoEm: data.criadoEm || data.createdAt || null,
+    atualizadoEm: data.atualizadoEm || data.updatedAt || null,
+    ultimoAcesso: data.ultimoAcesso || null,
   };
 }
 
 /**
  * Normaliza um documento de Equipamento
  */
-export function normalizeEquipamento(id: string, data: Record<string, unknown>): Equipamento {
+export function normalizeEquipamento(id: string, data: any): Equipamento {
   return {
     id,
-    nome: (data.nome as string) || "",
-    codigo: (data.codigo as string) || "",
-    tipo: (data.tipo as string) || "",
-    status: (data.status as Equipamento["status"]) || "DISPONÍVEL",
-    frenteId: (data.frenteId as string) || "",
+    nome: data.nome || "",
+    codigo: data.codigo || "",
+    tipo: data.tipo || "",
+    status: data.status || "DISPONÍVEL",
+    frenteId: data.frenteId || "",
   };
 }
 
 /**
  * Normaliza um documento de Frente
  */
-export function normalizeFrente(id: string, data: Record<string, unknown>): Frente {
+export function normalizeFrente(id: string, data: any): Frente {
   return {
     id,
-    nome: (data.nome as string) || "",
-    codigo: (data.codigo as string) || "",
-    responsavel: (data.responsavel as string) || "",
-    status: (data.status as Frente["status"]) || "ATIVA",
+    nome: data.nome || "",
+    codigo: data.codigo || "",
+    responsavel: data.responsavel || "",
+    status: data.status || "ATIVA",
   };
 }

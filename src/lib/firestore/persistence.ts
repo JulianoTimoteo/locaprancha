@@ -9,7 +9,7 @@ export const persistence = {
   /**
    * Salva dados no cache local
    */
-  save: (key: string, data: unknown) => {
+  save: (key: string, data: any) => {
     try {
       const payload = {
         timestamp: Date.now(),

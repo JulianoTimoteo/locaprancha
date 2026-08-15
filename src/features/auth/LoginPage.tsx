@@ -173,20 +173,18 @@ export function LoginPage() {
               <span className="text-[#40800c] text-3xl sm:text-4xl md:text-5xl">PRANCHA</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-primary-foreground/80 font-medium max-w-[320px] sm:max-w-none pt-4 italic">
-              Gestão inteligente e controle operacional em tempo real para a Usina Pitangueiras.
+            <p className="text-lg sm:text-2xl text-primary-foreground/90 font-bold max-w-[320px] sm:max-w-none pt-4">
+              Gestão inteligente e controle em tempo real para transporte de máquinas e
+              equipamentos.
             </p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 pt-6">
-            <div className="px-5 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-xs font-bold uppercase tracking-widest">
-              Frotas
+          <div className="flex justify-center gap-4 pt-4">
+            <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-semibold">
+              Eficiência Total
             </div>
-            <div className="px-5 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-xs font-bold uppercase tracking-widest">
-              Logística
-            </div>
-            <div className="px-5 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-xs font-bold uppercase tracking-widest">
-              Controle
+            <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-semibold">
+              Controle Real
             </div>
           </div>
         </div>
@@ -215,14 +213,13 @@ export function LoginPage() {
           </div>
 
           <div className="space-y-2 text-center lg:text-left">
-            <h2 className="text-4xl font-black tracking-tighter uppercase text-foreground/90">
-              {isReset ? "Recuperar" : "Conectar"}
+            <h2 className="text-3xl font-bold tracking-tight">
+              {isReset ? "Recuperar Senha" : "Bem-vindo de volta"}
             </h2>
-            <div className="w-12 h-1 bg-primary mx-auto lg:ml-0 rounded-full mt-2 mb-4" />
-            <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest opacity-70">
+            <p className="text-muted-foreground font-medium">
               {isReset
-                ? "Redefinição de credenciais de acesso"
-                : "Acesso restrito ao pessoal operacional"}
+                ? "Enviaremos um link de recuperação para seu e-mail."
+                : "Insira suas credenciais para gerenciar sua frota."}
             </p>
           </div>
 

@@ -36,10 +36,28 @@ export function useReservas() {
   const { sendNotification } = useNotifications();
 
   useEffect(() => {
-    let isMounted = true;
     const unsubscribe = subscribeToAgenda((data) => {
-      if (!isMounted) return;
+      // Notificar mudanças de status para o usuário logado
+      const prevData = persistence.get<Reserva[]>("agenda_full") || [];
+      if (prevData.length > 0) {
+        data.forEach((curr) => {
+          const prev = prevData.find((p) => p.id === curr.id);
+          if (prev && prev.status !== curr.status) {
+            // Notificar se for o solicitante ou se for admin
+            const isSolicitante = curr.solicitanteId === user?.uid;
+            const isRelevantAdmin = isAdmin(profile) || isGod(profile);
 
+            if (isSolicitante || isRelevantAdmin) {
+              sendNotification(
+                "Atualização de Reserva",
+                `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`,
+              );
+            }
+          }
+        });
+      }
+
+      // Ordenação Operacional: Iniciado -> Em Trânsito -> Agendado -> Pendente -> etc.
       const sortedData = [...data].sort((a, b) => {
         const order: Record<string, number> = {
           Iniciado: 1,
@@ -67,39 +85,13 @@ export function useReservas() {
         return timeB.localeCompare(timeA);
       });
 
-      setReservas((prevReservas) => {
-        const dataChanged = JSON.stringify(sortedData) !== JSON.stringify(prevReservas);
-        if (dataChanged) {
-          // Notificar mudanças apenas se houver dados novos reais
-          if (prevReservas.length > 0) {
-            sortedData.forEach((curr) => {
-              const prev = prevReservas.find((p) => p.id === curr.id);
-              if (prev && prev.status !== curr.status) {
-                const isSolicitante = curr.solicitanteId === user?.uid;
-                const isRelevantAdmin = isAdmin(profile) || isGod(profile);
-
-                if (isSolicitante || isRelevantAdmin) {
-                  sendNotification(
-                    "Atualização de Reserva",
-                    `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`,
-                  );
-                }
-              }
-            });
-          }
-          persistence.save("agenda_full", sortedData);
-          return sortedData;
-        }
-        return prevReservas;
-      });
+      setReservas(sortedData);
+      persistence.save("agenda_full", sortedData);
       setLoading(false);
     }, profile);
 
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, [profile, user?.uid, sendNotification]);
+    return () => unsubscribe();
+  }, [profile]);
 
   const addReserva = async (reservaData: Partial<Reserva>): Promise<string | undefined> => {
     if (!user || !profile) return;

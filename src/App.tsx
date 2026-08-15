@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense, useEffect, useCallback } from "react";
+import React, { useState, lazy, Suspense, useEffect } from "react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { Layout } from "@/components/layout/Layout";
@@ -55,17 +55,6 @@ export default function App() {
     return "dashboard";
   });
 
-  const handleNavigate = useCallback((view: string) => {
-    setCurrentView((prev) => {
-      if (prev === view) return prev;
-      localStorage.setItem("locaprancha_view", view);
-      const url = new URL(window.location.href);
-      url.searchParams.set("view", view);
-      window.history.pushState({ view }, "", url.toString());
-      return view;
-    });
-  }, []);
-
   useEffect(() => {
     const handleNav = (e: any) => {
       if (e.detail) {
@@ -90,18 +79,24 @@ export default function App() {
       window.removeEventListener("navigate", handleNav);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [handleNavigate]);
+  }, []);
 
   useEffect(() => {
     if (user && profile && currentView === "dashboard") {
-      const params = new URLSearchParams(window.location.search);
-      if (!params.get("view")) {
-        const url = new URL(window.location.href);
-        url.searchParams.set("view", "dashboard");
-        window.history.replaceState({ view: "dashboard" }, "", url.toString());
-      }
+      // Garantir que estamos no dashboard ao logar
+      handleNavigate(currentView || "dashboard");
     }
-  }, [user, profile, currentView]);
+  }, [user, !!profile]);
+
+  const handleNavigate = (view: string) => {
+    setCurrentView(view);
+    localStorage.setItem("locaprancha_view", view);
+
+    // Atualizar URL sem refresh (importante para GitHub Pages SPA)
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", view);
+    window.history.pushState({ view }, "", url.toString());
+  };
 
   if (loading && !profile) {
     return (
@@ -113,21 +108,8 @@ export default function App() {
           <span className="text-[#40800c] text-3xl font-black">PRANCHA</span>
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest animate-pulse mt-4">
-          Sincronizando ambiente seguro (v1.9.0)...
+          Sincronizando ambiente seguro...
         </p>
-        <div className="mt-8 opacity-0 hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-[9px] uppercase font-black"
-            onClick={() => {
-              localStorage.clear();
-              window.location.reload();
-            }}
-          >
-            Reset Forçado
-          </Button>
-        </div>
       </div>
     );
   }

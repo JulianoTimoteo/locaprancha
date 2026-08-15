@@ -11,7 +11,6 @@ import {
   writeBatch,
   Timestamp,
   runTransaction,
-  type DocumentReference,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Reserva, Frota, AuditLog, UserRole } from "@/types";
@@ -97,7 +96,7 @@ export class SystemValidator {
   }
 
   async runFullValidation(onProgress: (percent: number, message: string) => void) {
-    let testRunRef: DocumentReference | null = null;
+    let testRunRef: any = null;
     try {
       onProgress(0, "Iniciando Validação...");
 
@@ -107,7 +106,7 @@ export class SystemValidator {
         iniciadoEm: Timestamp.now(),
         iniciadoPor: this.userName,
         status: "EXECUTANDO",
-        totalEtapas: 5,
+        totalEtapas: 10,
         etapasConcluidas: 0,
         etapasFalhas: 0,
         etapasBloqueadas: 0,
@@ -131,17 +130,8 @@ export class SystemValidator {
       // 2. Read Fleet
       onProgress(20, "Lendo Frota...");
       const frotasSnap = await getDocs(collection(db, "frotas"));
-      const frotas = frotasSnap.docs.map((d) =>
-        normalizeFrota(d.id, d.data() as Record<string, unknown>),
-      );
-
-      // Permitir testar com qualquer equipamento para fins de depuração do GOD.
-      // Se for GOD e não houver disponíveis, pegamos o primeiro da lista.
-      let disponiveis = frotas.filter((f) => normalizeFrotaStatus(f.status) === "DISPONÍVEL");
-
-      if (disponiveis.length === 0 && frotas.length > 0) {
-        disponiveis = [frotas[0]];
-      }
+      const frotas = frotasSnap.docs.map((d) => normalizeFrota(d.id, d.data()));
+      const disponiveis = frotas.filter((f) => normalizeFrotaStatus(f.status) === "DISPONÍVEL");
 
       this.currentPrancha = disponiveis[0] || null;
 
@@ -176,14 +166,12 @@ export class SystemValidator {
         const locacaoId = await runTransaction(db, async (transaction) => {
           const fleetRef = doc(db, "frotas", this.currentPrancha!.id);
           const pSnap = await transaction.get(fleetRef);
-          const pData = pSnap.data() as Record<string, unknown> | undefined;
-          if (normalizeFrotaStatus(pData?.["status"]) !== "DISPONÍVEL") {
+          if (normalizeFrotaStatus(pSnap.data()?.["status"]) !== "DISPONÍVEL") {
             throw new Error("Prancha ocupada durante o teste.");
           }
           const agendaId = doc(collection(db, "agenda")).id;
           const agendaRef = doc(db, "agenda", agendaId);
           const resData = {
-            id: agendaId,
             pranchaId: this.currentPrancha!.frota,
             frenteId: "TESTE LOCACAO",
             tipoOperacao: "LOCACAO_DIRETA",
@@ -192,19 +180,11 @@ export class SystemValidator {
             testRunId: this.testRunId,
             createdAt: serverTimestamp(),
             iniciadoEm: serverTimestamp(),
-            horarioInicioReal: serverTimestamp(),
             userId: this.userId,
-            solicitanteId: this.userId,
             solicitanteNome: this.userName,
-            origem: "Teste",
-            destino: "Teste",
           };
           transaction.set(agendaRef, resData);
-          transaction.update(fleetRef, {
-            status: "ALOCADO",
-            updatedAt: serverTimestamp(),
-            updatedBy: this.userId,
-          });
+          transaction.update(fleetRef, { status: "ALOCADO" });
           return agendaId;
         });
         this.currentReservaId = locacaoId;
@@ -217,8 +197,7 @@ export class SystemValidator {
           obtido: "PASSOU",
           mensagem: "Transação atômica de locação direta funcionou.",
         });
-      } catch (err: unknown) {
-        const error = err as Error;
+      } catch (err: any) {
         await this.logStep({
           etapa: "TESTE 03 — LOCAÇÃO DIRETA",
           ordem: 3,
@@ -226,7 +205,7 @@ export class SystemValidator {
           status: "FALHOU",
           esperado: "Sucesso na transação",
           obtido: "FALHA",
-          erro: error.message,
+          erro: err.message,
         });
       }
 
@@ -236,8 +215,7 @@ export class SystemValidator {
         await runTransaction(db, async (transaction) => {
           const fleetRef = doc(db, "frotas", this.currentPrancha!.id);
           const pSnap = await transaction.get(fleetRef);
-          const pData = pSnap.data() as Record<string, unknown> | undefined;
-          if (normalizeFrotaStatus(pData?.["status"]) !== "DISPONÍVEL") {
+          if (normalizeFrotaStatus(pSnap.data()?.["status"]) !== "DISPONÍVEL") {
             throw new Error("❌ Prancha indisponível.");
           }
         });
@@ -250,15 +228,14 @@ export class SystemValidator {
           obtido: "PASSOU (Incorreto)",
           mensagem: "O sistema permitiu acesso a uma prancha que deveria estar ALOCADA.",
         });
-      } catch (err: unknown) {
-        const error = err as Error;
+      } catch (err: any) {
         await this.logStep({
           etapa: "TESTE 04 — BLOQUEIO CONCORRÊNCIA",
           ordem: 4,
           operacao: "CONCURRENCY_CHECK",
-          status: error.message.includes("indisponível") ? "PASSOU" : "FALHOU",
+          status: err.message.includes("indisponível") ? "PASSOU" : "FALHOU",
           esperado: "Bloqueio: Prancha indisponível",
-          obtido: error.message,
+          obtido: err.message,
         });
       }
 
@@ -268,14 +245,8 @@ export class SystemValidator {
         transaction.update(doc(db, "agenda", this.currentReservaId!), {
           status: "Finalizado",
           finalizadoEm: serverTimestamp(),
-          horarioFimReal: serverTimestamp(),
-          updatedAt: serverTimestamp(),
         });
-        transaction.update(doc(db, "frotas", this.currentPrancha!.id), {
-          status: "DISPONÍVEL",
-          updatedAt: serverTimestamp(),
-          updatedBy: this.userId,
-        });
+        transaction.update(doc(db, "frotas", this.currentPrancha!.id), { status: "DISPONÍVEL" });
       });
       await this.logStep({
         etapa: "TESTE 05 — FINALIZAÇÃO",
@@ -295,11 +266,11 @@ export class SystemValidator {
         finalizadoEm: Timestamp.now(),
         etapasConcluidas: concludedSteps,
         etapasFalhas: failures,
-        percentual: (concludedSteps / 5) * 100,
+        percentual: (concludedSteps / 10) * 100,
       });
 
       onProgress(100, failures === 0 ? "Sistema Aprovado!" : "Sistema Reprovado.");
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Test failure:", err);
       onProgress(100, "Erro durante a execução.");
     }

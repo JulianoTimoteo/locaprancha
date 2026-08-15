@@ -40,8 +40,8 @@ export interface AuditLogPayload {
   entidade: string;
   entidadeId: string;
   detalhes?: string;
-  dadosAnteriores?: unknown;
-  dadosNovos?: unknown;
+  dadosAnteriores?: any;
+  dadosNovos?: any;
 }
 
 /**
@@ -54,24 +54,24 @@ export async function logAction(
   acao?: AuditAction,
   entidade?: string,
   entidadeId?: string,
-  dadosAnteriores: unknown = null,
-  dadosNovos: unknown = null,
+  dadosAnteriores: any = null,
+  dadosNovos: any = null,
 ) {
   try {
-    let logData: Record<string, unknown>;
+    let logData: any;
 
     if (typeof payloadOrUid === "object") {
       logData = {
-        ...(payloadOrUid as unknown as Record<string, unknown>),
+        ...payloadOrUid,
         timestamp: serverTimestamp(),
       };
     } else {
       logData = {
         uid: payloadOrUid,
-        usuario: usuario || "Desconhecido",
-        acao: acao || "SYSTEM_TEST_RUN",
-        entidade: entidade || "SISTEMA",
-        entidadeId: entidadeId || "N/A",
+        usuario,
+        acao,
+        entidade,
+        entidadeId,
         dadosAnteriores: dadosAnteriores ? JSON.parse(JSON.stringify(dadosAnteriores)) : null,
         dadosNovos: dadosNovos ? JSON.parse(JSON.stringify(dadosNovos)) : null,
         timestamp: serverTimestamp(),
