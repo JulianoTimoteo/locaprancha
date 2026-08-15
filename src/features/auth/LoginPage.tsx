@@ -160,7 +160,11 @@ export function LoginPage() {
       toast.success("Bem-vindo ao Locaprancha!");
       setLoading(false);
     } catch (error: any) {
-      console.error("Erro no login:", error);
+      console.error("[LOGIN] Falha no login:", {
+        email: targetEmail,
+        code: error?.code,
+        message: error?.message,
+      });
       toast.error("Usuário ou senha inválidos.");
       setLoading(false);
     }
