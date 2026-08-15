@@ -55,16 +55,19 @@ export default function App() {
     return "dashboard";
   });
 
-  const handleNavigate = useCallback((view: string) => {
-    if (view === currentView) return;
+  const handleNavigate = useCallback(
+    (view: string) => {
+      if (view === currentView) return;
 
-    setCurrentView(view);
-    localStorage.setItem("locaprancha_view", view);
+      setCurrentView(view);
+      localStorage.setItem("locaprancha_view", view);
 
-    const url = new URL(window.location.href);
-    url.searchParams.set("view", view);
-    window.history.pushState({ view }, "", url.toString());
-  }, [currentView]);
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", view);
+      window.history.pushState({ view }, "", url.toString());
+    },
+    [currentView],
+  );
 
   useEffect(() => {
     const handleNav = (e: any) => {
