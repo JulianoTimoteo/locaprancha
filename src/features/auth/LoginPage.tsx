@@ -170,6 +170,9 @@ export function LoginPage() {
         message: error?.message,
         stack: error?.stack,
       });
+      alert(
+        "LOGIN ERRO: " + (error?.code || "sem código") + " - " + (error?.message || "sem mensagem"),
+      );
       const errorMessage = error?.message || "Erro desconhecido";
       const errorCode = error?.code || "sem código";
       toast.error(`Usuário ou senha inválidos.\n\nCódigo: ${errorCode}\nDetalhe: ${errorMessage}`);
