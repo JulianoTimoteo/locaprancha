@@ -40,27 +40,6 @@ export function useReservas() {
     const unsubscribe = subscribeToAgenda((data) => {
       if (!isMounted) return;
 
-      // Obter dados anteriores de forma estável (evita depender da variável reservas do hook que muda a cada render)
-      const prevData = persistence.get<Reserva[]>("agenda_full") || [];
-
-      // Notificar mudanças apenas se houver dados novos reais
-      if (prevData.length > 0) {
-        data.forEach((curr) => {
-          const prev = prevData.find((p) => p.id === curr.id);
-          if (prev && prev.status !== curr.status) {
-            const isSolicitante = curr.solicitanteId === user?.uid;
-            const isRelevantAdmin = isAdmin(profile) || isGod(profile);
-
-            if (isSolicitante || isRelevantAdmin) {
-              sendNotification(
-                "Atualização de Reserva",
-                `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`,
-              );
-            }
-          }
-        });
-      }
-
       const sortedData = [...data].sort((a, b) => {
         const order: Record<string, number> = {
           Iniciado: 1,
@@ -88,13 +67,32 @@ export function useReservas() {
         return timeB.localeCompare(timeA);
       });
 
-      // Só atualiza o estado se os dados realmente mudaram para evitar loops de render
-      const dataChanged = JSON.stringify(sortedData) !== JSON.stringify(prevData);
-      if (dataChanged) {
-        setReservas(sortedData);
-        persistence.save("agenda_full", sortedData);
-        setLoading(false);
-      }
+      setReservas((prevReservas) => {
+        const dataChanged = JSON.stringify(sortedData) !== JSON.stringify(prevReservas);
+        if (dataChanged) {
+          // Notificar mudanças apenas se houver dados novos reais
+          if (prevReservas.length > 0) {
+            sortedData.forEach((curr) => {
+              const prev = prevReservas.find((p) => p.id === curr.id);
+              if (prev && prev.status !== curr.status) {
+                const isSolicitante = curr.solicitanteId === user?.uid;
+                const isRelevantAdmin = isAdmin(profile) || isGod(profile);
+
+                if (isSolicitante || isRelevantAdmin) {
+                  sendNotification(
+                    "Atualização de Reserva",
+                    `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`,
+                  );
+                }
+              }
+            });
+          }
+          persistence.save("agenda_full", sortedData);
+          return sortedData;
+        }
+        return prevReservas;
+      });
+      setLoading(false);
     }, profile);
 
     return () => {
