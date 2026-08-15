@@ -133,23 +133,40 @@
         }
       </style>
       <script>
-        // Versão v1.7.1 - Anti-White-Screen Guard Reinforced (Loop-Protected)
+        // Versão v1.7.5 - Anti-White-Screen Guard Reinforced (Mount-Aware)
         let autoRetryCount = parseInt(localStorage.getItem("locaprancha_auto_retry") || "0");
+        let appMounted = false;
 
-        setTimeout(() => {
+        // Detector de montagem bem-sucedida
+        const checkMount = () => {
           const root = document.getElementById("root");
           const isEmpty = !root || root.innerHTML.trim() === "";
+          if (!isEmpty) {
+            appMounted = true;
+            const loader = document.getElementById("emergency-loader");
+            if (loader) {
+              loader.style.display = "none";
+              console.log("[ANTI-WHITE-SCREEN] App montado com sucesso.");
+            }
+            localStorage.removeItem("locaprancha_auto_retry");
+            return true;
+          }
+          return false;
+        };
 
-          if (isEmpty) {
-            console.error("[ANTI-WHITE-SCREEN] Falha crítica de montagem detectada.");
+        // Verificar periodicamente se o app montou
+        const mountInterval = setInterval(() => {
+          if (checkMount()) clearInterval(mountInterval);
+        }, 500);
+
+        // Timeout de segurança para falha de montagem
+        setTimeout(() => {
+          clearInterval(mountInterval);
+          if (!appMounted) {
+            console.error("[ANTI-WHITE-SCREEN] Falha crítica de montagem detectada após 8s.");
 
             if (autoRetryCount < 1) {
               const nextRetry = autoRetryCount + 1;
-              console.warn(
-                "[ANTI-WHITE-SCREEN] Tentando recuperação automática (" + nextRetry + ")...",
-              );
-
-              // Limpar cache mas PRESERVAR o contador de retry
               localStorage.clear();
               sessionStorage.clear();
               localStorage.setItem("locaprancha_auto_retry", nextRetry.toString());
@@ -162,25 +179,13 @@
               window.location.href =
                 window.location.origin + window.location.pathname + "?auto-reset=" + Date.now();
             } else {
-              // Tentativa final automática antes de mostrar o erro
-              console.error(
-                "[ANTI-WHITE-SCREEN] Recuperação falhou. Executando reset forçado final...",
-              );
-              localStorage.clear();
-              sessionStorage.clear();
-              localStorage.removeItem("locaprancha_auto_retry");
-              window.location.href =
-                window.location.origin + window.location.pathname + "?final-reset=" + Date.now();
-            }
-          } else {
-            const loader = document.getElementById("emergency-loader");
-            if (loader && !isEmpty) {
-              loader.style.display = "none";
-              // Apenas limpa se o app montou com sucesso
+              console.error("[ANTI-WHITE-SCREEN] Recuperação automática esgotada. Mostrando diagnóstico.");
+              const diag = document.getElementById("error-diagnosis");
+              if (diag) diag.style.display = "block";
               localStorage.removeItem("locaprancha_auto_retry");
             }
           }
-        }, 8000); // Aumentado para 8s para evitar falsos positivos em redes lentas
+        }, 8000);
 
         document.getElementById("reset-storage-html")?.addEventListener("click", () => {
           console.warn("[ANTI-WHITE-SCREEN] Executando Hard Reset Manual via HTML...");
