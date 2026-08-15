@@ -80,10 +80,9 @@ export function useEquipamentos() {
   const seedEquipamentos = async () => {
     try {
       const snapshot = await getDocs(collection(db, "equipamentos"));
-      if (!snapshot.empty) {
-        toast.info("Banco de dados já contém equipamentos.");
-        return;
-      }
+      const existingCodes = new Set(
+        snapshot.docs.map((doc) => (doc.data().codigo as string) || ""),
+      );
 
       const initialData = [
         { codigo: "11116", nome: "TRATOR NEW HOLLAND T7 245", grupo: "BIOMASSA" },
@@ -302,18 +301,28 @@ export function useEquipamentos() {
       ];
 
       const batch = writeBatch(db);
+      let addedCount = 0;
       initialData.forEach((item) => {
-        const docRef = doc(collection(db, "equipamentos"));
-        batch.set(docRef, {
-          codigo: item.codigo,
-          nome: item.nome,
-          tipo: item.grupo,
-          status: "DISPONÍVEL",
-          createdAt: new Date(),
-        });
+        if (!existingCodes.has(item.codigo)) {
+          const docRef = doc(collection(db, "equipamentos"));
+          batch.set(docRef, {
+            codigo: item.codigo,
+            nome: item.nome,
+            tipo: item.grupo,
+            status: "DISPONÍVEL",
+            createdAt: new Date(),
+          });
+          addedCount++;
+        }
       });
+
+      if (addedCount === 0) {
+        toast.info("Nenhum equipamento novo para importar.");
+        return;
+      }
+
       await batch.commit();
-      toast.success("Equipamentos importados com sucesso");
+      toast.success(`${addedCount} equipamentos importados com sucesso`);
     } catch (e) {
       console.error("Erro no seed:", e);
       toast.error("Erro ao importar equipamentos");

@@ -5,14 +5,22 @@ import { getAuth } from "firebase/auth";
 // Firebase configuration for Web SDK
 // Usa variáveis de ambiente (VITE_*) quando disponíveis (GitHub Actions),
 // com fallback para valores diretos para desenvolvimento local.
+const requiredEnv = (key: string) => {
+  const value = import.meta.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+};
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "REMOVED_SECRET",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "locaprancha.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "locaprancha",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "locaprancha.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "779406680946",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:779406680946:web:f8a3286f6da76d7ab473eb",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-491BHV18M6",
+  apiKey: requiredEnv("VITE_FIREBASE_API_KEY"),
+  authDomain: requiredEnv("VITE_FIREBASE_AUTH_DOMAIN"),
+  projectId: requiredEnv("VITE_FIREBASE_PROJECT_ID"),
+  storageBucket: requiredEnv("VITE_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: requiredEnv("VITE_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: requiredEnv("VITE_FIREBASE_APP_ID"),
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
