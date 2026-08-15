@@ -141,16 +141,19 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   doc.setTextColor(0, 0, 0);
   doc.text("DETALHAMENTO DAS OPERAÇÕES", margin, currentY);
 
-  const tableRows = data.operacoes.map((op: any) => [
-    op.data || "N/A",
-    op.hora || op.horarioRetirada || "N/A",
-    op.pranchaId || "N/A",
-    op.frenteId || "N/A",
-    op.solicitanteNome || "N/A",
-    op.origem || "N/A",
-    op.destino || "N/A",
-    op.status || "N/A",
-  ]);
+  const tableRows = data.operacoes.map((op) => {
+    const r = op as Reserva;
+    return [
+      r.data || "N/A",
+      r.hora || r.horarioRetirada || "N/A",
+      r.pranchaId || "N/A",
+      r.frenteId || "N/A",
+      r.solicitanteNome || "N/A",
+      r.origem || "N/A",
+      r.destino || "N/A",
+      r.status || "N/A",
+    ];
+  });
 
   (autoTable as unknown as (d: jsPDF, options: Record<string, unknown>) => void)(doc, {
     startY: currentY + 5,
@@ -189,7 +192,8 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   });
 
   // Final Summary on last page
-  const finalY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY || currentY + 10;
+  const finalY =
+    (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY || currentY + 10;
 
   if (finalY < pageHeight - 40) {
     doc.setFontSize(10);
