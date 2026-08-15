@@ -19,7 +19,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit2, Trash2, Truck, Info } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Truck, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Equipamento } from "@/types";
 import { useFrentes } from "@/features/frentes/useFrentes";
@@ -45,6 +45,8 @@ export function EquipamentoList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<Equipamento | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const [formData, setFormData] = useState({
     codigo: "",
@@ -95,6 +97,10 @@ export function EquipamentoList() {
       e.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.tipo?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   if (loading)
     return (
@@ -217,7 +223,7 @@ export function EquipamentoList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((item) => (
+            {paginated.map((item) => (
               <TableRow key={item.id} className="hover:bg-muted/10 transition-colors">
                 <TableCell className="font-black text-primary uppercase">{item.codigo}</TableCell>
                 <TableCell className="font-bold flex items-center gap-2">
@@ -304,6 +310,31 @@ export function EquipamentoList() {
           </TableBody>
         </Table>
       </div>
+      {filtered.length > pageSize && (
+        <div className="flex items-center justify-between px-1 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            className="font-bold"
+          >
+            <ChevronLeft size={16} className="mr-1" /> Anterior
+          </Button>
+          <span className="text-xs font-bold text-muted-foreground">
+            Página {safePage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            className="font-bold"
+          >
+            Próxima <ChevronRight size={16} className="ml-1" />
+          </Button>
+        </div>
+      )}
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[425px]">

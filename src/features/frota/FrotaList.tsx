@@ -11,7 +11,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Wrench, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Wrench,
+  CheckCircle2,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Frota, StatusFrota } from "@/types";
 import { FrotaStatusBadge } from "./FrotaStatusBadge";
 import { FrotaForm } from "./FrotaForm";
@@ -40,6 +48,8 @@ export function FrotaList() {
   const [isWorkshopDialogOpen, setIsWorkshopDialogOpen] = useState(false);
   const [frotaForWorkshop, setFrotaForWorkshop] = useState<Frota | null>(null);
   const [justification, setJustification] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const canManage = canManageFleet(profile);
 
@@ -58,6 +68,10 @@ export function FrotaList() {
       return matchesSearch && matchesStatus;
     });
   }, [frotas, searchTerm, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredFrotas.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedFrotas = filteredFrotas.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const handleEdit = (frota: Frota) => {
     setFrotaToEdit(frota);
@@ -142,7 +156,7 @@ export function FrotaList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredFrotas.map((frota: Frota) => (
+              {paginatedFrotas.map((frota: Frota) => (
                 <TableRow key={frota.id} className="hover:bg-muted/10 transition-colors">
                   <TableCell className="text-xl font-black text-primary">
                     🚚 {frota.frota}
@@ -241,7 +255,7 @@ export function FrotaList() {
 
       {/* Mobile View */}
       <div className="md:hidden grid grid-cols-1 gap-4">
-        {filteredFrotas.map((frota: Frota) => (
+        {paginatedFrotas.map((frota: Frota) => (
           <FrotaCard
             key={frota.id}
             frota={frota}
@@ -356,6 +370,31 @@ export function FrotaList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {filteredFrotas.length > pageSize && (
+        <div className="flex items-center justify-between px-1 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            className="font-bold"
+          >
+            <ChevronLeft size={16} className="mr-1" /> Anterior
+          </Button>
+          <span className="text-xs font-bold text-muted-foreground">
+            Página {safePage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            className="font-bold"
+          >
+            Próxima <ChevronRight size={16} className="ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

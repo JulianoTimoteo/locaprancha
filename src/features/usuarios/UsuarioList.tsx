@@ -15,7 +15,15 @@ import { Input } from "@/components/ui/input";
 import { UserRole, UserProfile } from "@/types";
 import { format } from "date-fns";
 import { UsuarioForm } from "./UsuarioForm";
-import { Plus, Search, UserCog, UserMinus, ShieldAlert } from "lucide-react";
+import {
+  Plus,
+  Search,
+  UserCog,
+  UserMinus,
+  ShieldAlert,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 export function UsuarioList() {
   const { usuarios, loading, updateStatus, deleteUsuario } = useUsuarios();
@@ -23,11 +31,12 @@ export function UsuarioList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const currentUserRole = profile?.role;
   const isGod = currentUserRole === "GOD";
 
-  // Regra 1 e 13: Filtrar GOD para quem não é GOD
   const filteredUsuarios = usuarios.filter((u) => {
     const role = u.role;
     const matchesSearch =
@@ -38,6 +47,10 @@ export function UsuarioList() {
     if (isGod) return matchesSearch;
     return role !== "GOD" && matchesSearch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsuarios.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedUsuarios = filteredUsuarios.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const handleEdit = (user: UserProfile) => {
     setUserToEdit(user);
@@ -106,7 +119,7 @@ export function UsuarioList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsuarios.map((u) => {
+            {paginatedUsuarios.map((u) => {
               const role = u.role;
               const isGodProfile = role === "GOD";
 
@@ -218,6 +231,31 @@ export function UsuarioList() {
           </TableBody>
         </Table>
       </div>
+      {filteredUsuarios.length > pageSize && (
+        <div className="flex items-center justify-between px-1 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            className="font-bold"
+          >
+            <ChevronLeft size={16} className="mr-1" /> Anterior
+          </Button>
+          <span className="text-xs font-bold text-muted-foreground">
+            Página {safePage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            className="font-bold"
+          >
+            Próxima <ChevronRight size={16} className="ml-1" />
+          </Button>
+        </div>
+      )}
 
       <UsuarioForm open={isFormOpen} onOpenChange={setIsFormOpen} userToEdit={userToEdit} />
     </div>
