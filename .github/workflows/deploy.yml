@@ -27,12 +27,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Format and Fix Lint
-        run: |
-          npm run format
-          npm run lint:fix
-
-      - name: Lint check
+      - name: Lint
         run: npm run lint
 
       - name: Typecheck

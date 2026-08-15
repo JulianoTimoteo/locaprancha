@@ -1,32 +1,14 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import {
   doc,
   onSnapshot,
-  query,
-  collection,
-  where,
-  limit,
-  getDocs,
-  enableIndexedDbPersistence,
 } from "firebase/firestore";
 import { UserProfile } from "@/types";
 import { normalizeUserProfile } from "@/lib/firestore/normalizers";
 import { persistence } from "@/lib/firestore/persistence";
 
-// Tentar habilitar persistência nativa do Firestore
-try {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === "failed-precondition") {
-      console.warn("[FIRESTORE] Persistência falhou: multiplas abas abertas.");
-    } else if (err.code === "unimplemented") {
-      console.warn("[FIRESTORE] Persistência não suportada pelo navegador.");
-    }
-  });
-} catch (e) {
-  // ignore
-}
 
 export type AuthStatus =
   | "LOADING"
@@ -62,34 +44,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("LOADING");
 
   // Recuperar perfil do cache IMEDIATAMENTE no render inicial se existir
-  useState(() => {
+  useEffect(() => {
     const cachedProfile = persistence.get<UserProfile>("profile");
     if (cachedProfile) {
       setProfile(cachedProfile);
     }
-  });
+  }, []);
 
   // Sincronizar status quando o profile for carregado do cache ou da rede
   useEffect(() => {
     if (profile) {
-      let newStatus: AuthStatus = "PROFILE_OK";
       if (profile.status === "BLOQUEADO") {
-        newStatus = "PROFILE_BLOCKED";
+        setStatus("PROFILE_BLOCKED");
       } else if (profile.status === "INATIVO") {
-        newStatus = "PROFILE_INACTIVE";
+        setStatus("PROFILE_INACTIVE");
+      } else {
+        setStatus("PROFILE_OK");
       }
-
-      setStatus((prevStatus) => {
-        if (prevStatus !== newStatus) return newStatus;
-        return prevStatus;
-      });
     }
   }, [profile]);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | undefined;
 
+    // TIMEOUT DE SEGURANÇA: Se o Firebase Auth não responder em 10s,
+    // forçamos o fim do loading para evitar loop infinito.
+    const safetyTimeout = setTimeout(() => {
+      if (authLoading) {
+        console.warn("[AUTH] Timeout de segurança atingido (10s). Forçando fim do loading.");
+        setAuthLoading(false);
+        setProfileLoading(false);
+        if (!user) {
+          setStatus("AUTH_NOT_FOUND");
+        }
+      }
+    }, 10_000);
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      clearTimeout(safetyTimeout);
       setUser(user);
       setAuthLoading(false);
 
@@ -106,9 +98,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // O documento deve ter como ID o Firebase Auth UID.
         const userDocRef = doc(db, "usuarios", user.uid);
 
+        // Timeout para carregamento do perfil (15s)
+        const profileTimeout = setTimeout(() => {
+          console.warn("[AUTH] Timeout ao carregar perfil do Firestore (15s).");
+          setProfileLoading(false);
+          if (!profile) {
+            setStatus("PROFILE_NOT_FOUND");
+          }
+        }, 15_000);
+
         unsubscribeProfile = onSnapshot(
           userDocRef,
           (docSnapshot) => {
+            clearTimeout(profileTimeout);
             if (docSnapshot.exists()) {
               const profileData = normalizeUserProfile(docSnapshot.id, docSnapshot.data());
               setProfile(profileData);
@@ -135,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           },
           (error) => {
+            clearTimeout(profileTimeout);
             console.error("[AUTH] Erro ao carregar perfil:", error);
             setStatus("PROFILE_NOT_FOUND");
             setProfileLoading(false);
@@ -148,12 +151,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      clearTimeout(safetyTimeout);
       unsubscribeAuth();
       unsubscribeProfile?.();
     };
   }, []);
 
-  const loading = authLoading || (profileLoading && status === "LOADING");
+  const loading = authLoading || profileLoading;
 
   return (
     <AuthContext.Provider value={{ user, profile, status, authLoading, profileLoading, loading }}>
