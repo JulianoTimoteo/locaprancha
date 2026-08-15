@@ -54,6 +54,58 @@ export function LoginPage() {
       .replace(/(^\.|\.$)/g, "");
   };
 
+  const resolverNicknameParaEmail = async (valor: string): Promise<string> => {
+    const normalizedNickname = normalizarNickname(valor);
+    const q = query(
+      collection(db, "usuarios"),
+      where("nickname", "==", normalizedNickname),
+      limit(1),
+    );
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+      const userData = snap.docs[0].data();
+      const emailEncontrado = (userData["email"] as string) || "";
+      if (emailEncontrado) {
+        console.warn(
+          "[LOGIN] Nickname resolvido (exato):",
+          normalizedNickname,
+          "->",
+          emailEncontrado,
+        );
+        return emailEncontrado;
+      }
+    }
+
+    const snapLoose = await getDocs(
+      query(
+        collection(db, "usuarios"),
+        where("nickname", ">=", normalizedNickname),
+        where("nickname", "<=", normalizedNickname + "\uf8ff"),
+        limit(5),
+      ),
+    );
+
+    for (const doc of snapLoose.docs) {
+      const data = doc.data();
+      if (normalizarNickname((data["nickname"] as string) || "") === normalizedNickname) {
+        const emailEncontrado = (data["email"] as string) || "";
+        if (emailEncontrado) {
+          console.warn(
+            "[LOGIN] Nickname resolvido (fallback):",
+            normalizedNickname,
+            "->",
+            emailEncontrado,
+          );
+          return emailEncontrado;
+        }
+      }
+    }
+
+    console.warn("[LOGIN] Nickname não encontrado:", normalizedNickname, "valor digitado:", valor);
+    return "";
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -61,25 +113,13 @@ export function LoginPage() {
     try {
       let targetEmail = email;
 
-      // 1. Resolver Nickname para E-mail (Mecanismo de Conveniência)
       if (!email.includes("@")) {
-        const normalizedNickname = normalizarNickname(email);
-        const q = query(
-          collection(db, "usuarios"),
-          where("nickname", "==", normalizedNickname),
-          limit(1),
-        );
-        const snap = await getDocs(q);
-
-        if (snap.empty) {
+        targetEmail = await resolverNicknameParaEmail(email);
+        if (!targetEmail) {
           toast.error("Usuário ou senha inválidos.");
           setLoading(false);
           return;
         }
-
-        const firstDoc = snap.docs[0];
-        const userData = firstDoc ? firstDoc.data() : null;
-        targetEmail = userData ? (userData["email"] as string) : "";
       }
 
       // Configurar Persistência
@@ -132,31 +172,20 @@ export function LoginPage() {
       let targetEmail = email;
 
       if (!email.includes("@")) {
-        const normalizedNickname = normalizarNickname(email);
-        const q = query(
-          collection(db, "usuarios"),
-          where("nickname", "==", normalizedNickname),
-          limit(1),
-        );
-        const snap = await getDocs(q);
-
-        if (snap.empty) {
+        targetEmail = await resolverNicknameParaEmail(email);
+        if (!targetEmail) {
           toast.error("Usuário não encontrado.");
           setLoading(false);
           return;
         }
-
-        const firstDocReset = snap.docs[0];
-        const userDataReset = firstDocReset ? firstDocReset.data() : null;
-        targetEmail = userDataReset ? (userDataReset["email"] as string) : "";
       }
 
       await sendPasswordResetEmail(auth, targetEmail);
       toast.success("E-mail de recuperação enviado para o endereço cadastrado!");
       setIsReset(false);
+      setLoading(false);
     } catch (error: any) {
       toast.error("Erro ao enviar e-mail: " + error.message);
-    } finally {
       setLoading(false);
     }
   };
