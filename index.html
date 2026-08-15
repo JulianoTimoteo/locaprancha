@@ -135,36 +135,42 @@
       <script>
         // Versão v1.7.1 - Anti-White-Screen Guard Reinforced (Loop-Protected)
         let autoRetryCount = parseInt(localStorage.getItem("locaprancha_auto_retry") || "0");
-        
+
         setTimeout(() => {
           const root = document.getElementById("root");
           const isEmpty = !root || root.innerHTML.trim() === "";
 
           if (isEmpty) {
             console.error("[ANTI-WHITE-SCREEN] Falha crítica de montagem detectada.");
-            
+
             if (autoRetryCount < 1) {
               const nextRetry = autoRetryCount + 1;
-              console.warn("[ANTI-WHITE-SCREEN] Tentando recuperação automática (" + nextRetry + ")...");
-              
+              console.warn(
+                "[ANTI-WHITE-SCREEN] Tentando recuperação automática (" + nextRetry + ")...",
+              );
+
               // Limpar cache mas PRESERVAR o contador de retry
               localStorage.clear();
               sessionStorage.clear();
               localStorage.setItem("locaprancha_auto_retry", nextRetry.toString());
-              
+
               if ("serviceWorker" in navigator) {
                 navigator.serviceWorker.getRegistrations().then((registrations) => {
                   for (let registration of registrations) registration.unregister();
                 });
               }
-              window.location.href = window.location.origin + window.location.pathname + "?auto-reset=" + Date.now();
+              window.location.href =
+                window.location.origin + window.location.pathname + "?auto-reset=" + Date.now();
             } else {
               // Tentativa final automática antes de mostrar o erro
-              console.error("[ANTI-WHITE-SCREEN] Recuperação falhou. Executando reset forçado final...");
+              console.error(
+                "[ANTI-WHITE-SCREEN] Recuperação falhou. Executando reset forçado final...",
+              );
               localStorage.clear();
               sessionStorage.clear();
               localStorage.removeItem("locaprancha_auto_retry");
-              window.location.href = window.location.origin + window.location.pathname + "?final-reset=" + Date.now();
+              window.location.href =
+                window.location.origin + window.location.pathname + "?final-reset=" + Date.now();
             }
           } else {
             const loader = document.getElementById("emergency-loader");
