@@ -30,6 +30,8 @@ import {
   Truck,
   AlertCircle,
   Hash,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { formatReservaDateTime } from "@/lib/utils/reservaFormatting";
 import { format } from "date-fns";
@@ -52,6 +54,8 @@ export function ReservaList() {
   const [isLocarModalOpen, setIsLocarModalOpen] = useState(false);
   const [locarInitialData, setLocarInitialData] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // Listen for direct allocation requests from other components
   React.useEffect(() => {
@@ -132,6 +136,10 @@ export function ReservaList() {
       return r.userId === profile?.uid || r.solicitanteId === profile?.uid;
     });
   }, [reservas, searchTerm, profile]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const getStatusBadge = (reserva: Reserva) => {
     const status = reserva.status;
@@ -285,7 +293,7 @@ export function ReservaList() {
 
       {/* Mobile View: Cards */}
       <div className="grid grid-cols-1 gap-4 lg:hidden px-1">
-        {filtered.map((reserva) => (
+        {paginated.map((reserva) => (
           <Card
             key={reserva.id}
             className="overflow-hidden border-primary/5 shadow-md active:scale-[0.99] transition-transform"
@@ -416,7 +424,7 @@ export function ReservaList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((reserva) => (
+            {paginated.map((reserva) => (
               <TableRow key={reserva.id} className="hover:bg-muted/20 transition-colors">
                 <TableCell className="font-bold whitespace-nowrap">
                   <div className="flex flex-col text-xs">
@@ -520,6 +528,32 @@ export function ReservaList() {
           <Calendar size={48} className="opacity-10 mb-4" />
           <p className="font-bold text-lg">📅 Nenhum transporte agendado</p>
           <p className="text-sm">Você ainda não possui solicitações futuras.</p>
+        </div>
+      )}
+
+      {filtered.length > pageSize && (
+        <div className="flex items-center justify-between px-1 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            className="font-bold"
+          >
+            <ChevronLeft size={16} className="mr-1" /> Anterior
+          </Button>
+          <span className="text-xs font-bold text-muted-foreground">
+            Página {safePage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            className="font-bold"
+          >
+            Próxima <ChevronRight size={16} className="ml-1" />
+          </Button>
         </div>
       )}
 

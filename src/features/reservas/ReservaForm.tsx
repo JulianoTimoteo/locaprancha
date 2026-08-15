@@ -41,24 +41,6 @@ export function ReservaForm({
   const { frentes } = useFrentes();
   const { equipamentos } = useEquipamentos();
 
-  const equipamentosFiltrados = React.useMemo(() => {
-    if (!formData.frenteId) return equipamentos;
-    const frente = frentes.find((f) => f.id === formData.frenteId);
-    if (!frente) return equipamentos;
-    const nomeFrente = frente.nome.toUpperCase();
-    return equipamentos.filter((e) => {
-      if (e.frenteId === formData.frenteId) return true;
-      if (e.tipo && e.tipo.toUpperCase() === nomeFrente) return true;
-      if (
-        e.tipo &&
-        e.tipo.includes("FRENTE") &&
-        nomeFrente.includes(e.tipo.split("FRENTE")[1]?.trim() || "")
-      )
-        return true;
-      return false;
-    });
-  }, [formData.frenteId, frentes, equipamentos]);
-
   const [formData, setFormData] = useState({
     pranchaId: "",
     frenteId: "",
@@ -79,6 +61,24 @@ export function ReservaForm({
     relatorio: null,
     motivoRecusa: "",
   });
+
+  const equipamentosFiltrados = React.useMemo(() => {
+    if (!formData.frenteId) return equipamentos;
+    const frente = frentes.find((f) => f.id === formData.frenteId);
+    if (!frente) return equipamentos;
+    const nomeFrente = frente.nome.toUpperCase();
+    return equipamentos.filter((e) => {
+      if (e.frenteId === formData.frenteId) return true;
+      if (e.tipo && e.tipo.toUpperCase() === nomeFrente) return true;
+      if (
+        e.tipo &&
+        e.tipo.includes("FRENTE") &&
+        nomeFrente.includes(e.tipo.split("FRENTE")[1]?.trim() || "")
+      )
+        return true;
+      return false;
+    });
+  }, [formData.frenteId, frentes, equipamentos]);
 
   const [submitting, setSubmitting] = useState(false);
 
