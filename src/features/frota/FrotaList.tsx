@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Wrench, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, Edit2, Wrench, CheckCircle2 } from "lucide-react";
 import { Frota, StatusFrota } from "@/types";
 import { FrotaStatusBadge } from "./FrotaStatusBadge";
 import { FrotaForm } from "./FrotaForm";
@@ -27,6 +27,13 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Truck } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function FrotaList() {
   const { frotas, loading, changeStatus } = useFleet();
@@ -70,10 +77,7 @@ export function FrotaList() {
   };
 
   const openWorkshopDialog = (frota: Frota) => {
-    if (frota.status === "ALOCADO") {
-      // Regra 12
-      return;
-    }
+    if (frota.status === "ALOCADO") return;
     setFrotaForWorkshop(frota);
     setJustification("");
     setIsWorkshopDialogOpen(true);
@@ -94,13 +98,16 @@ export function FrotaList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-card/40 backdrop-blur-sm p-6 rounded-2xl border border-primary/5 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+          <Truck size={80} />
+        </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight uppercase" id="page-title">
-            Gestão de Frota
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase text-foreground/90 flex items-center gap-3" id="page-title">
+            <Truck className="text-primary w-8 h-8" /> Gestão de Frota
           </h1>
-          <p className="text-muted-foreground font-medium text-xs sm:text-sm">
-            Controle de disponibilidade e manutenção.
+          <p className="text-[10px] sm:text-xs text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-70">
+            Pranchas de Transporte • Disponibilidade
           </p>
         </div>
 
@@ -127,119 +134,114 @@ export function FrotaList() {
           onStatusFilterChange={setStatusFilter}
         />
 
-        {/* Desktop View */}
-        <div className="hidden md:block border rounded-xl bg-card overflow-hidden shadow-md mt-4">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead className="font-black text-xs uppercase w-[150px]">Frota</TableHead>
-                <TableHead className="font-black text-xs uppercase w-[120px]">Placa</TableHead>
-                <TableHead className="font-black text-xs uppercase">Equipamento</TableHead>
-                <TableHead className="font-black text-xs uppercase w-[180px]">Status</TableHead>
-                <TableHead className="font-black text-xs uppercase text-right w-[150px]">
-                  Ações
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredFrotas.map((frota: Frota) => (
-                <TableRow key={frota.id} className="hover:bg-muted/10 transition-colors">
-                  <TableCell className="text-xl font-black text-primary">
-                    🚚 {frota.frota}
-                  </TableCell>
-                  <TableCell className="font-black text-sm uppercase tracking-tighter text-muted-foreground">
-                    {frota.placa}
-                  </TableCell>
-                  <TableCell className="font-bold text-sm">
-                    <div className="flex flex-col">
-                      <span>{frota.nome}</span>
-                      <span className="text-[10px] text-muted-foreground uppercase">
-                        {frota.marca} {frota.modelo}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <FrotaStatusBadge status={frota.status} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {canManage && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-black text-[10px] gap-1"
-                          disabled={frota.status !== "DISPONÍVEL"}
-                          onClick={() => {
-                            // Abre o modal de locação direta com esta prancha pré-selecionada
-                            const event = new CustomEvent("open-locar", {
-                              detail: { pranchaId: frota.frota },
-                            });
-                            window.dispatchEvent(event);
-                          }}
-                        >
-                          LOCAR 🛣️
-                        </Button>
-                      )}
-                      {canManage && (
-                        <>
+        <div className="bg-card border rounded-2xl shadow-sm overflow-hidden border-b-4 border-b-primary">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="font-black text-xs uppercase w-[150px]">Frota</TableHead>
+                  <TableHead className="font-black text-xs uppercase w-[120px]">Placa</TableHead>
+                  <TableHead className="font-black text-xs uppercase">Equipamento</TableHead>
+                  <TableHead className="font-black text-xs uppercase w-[180px]">Status</TableHead>
+                  <TableHead className="font-black text-xs uppercase text-right w-[150px]">
+                    Ações
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredFrotas.map((frota: Frota) => (
+                  <TableRow key={frota.id} className="hover:bg-muted/10 transition-colors">
+                    <TableCell className="text-xl font-black text-primary">
+                      🚚 {frota.frota}
+                    </TableCell>
+                    <TableCell className="font-black text-sm uppercase tracking-tighter text-muted-foreground">
+                      {frota.placa}
+                    </TableCell>
+                    <TableCell className="font-bold text-sm">
+                      <div className="flex flex-col">
+                        <span>{frota.nome}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase">
+                          {frota.marca} {frota.modelo}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <FrotaStatusBadge status={frota.status} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        {canManage && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => handleEdit(frota)}
+                            className="h-8 px-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-black text-[10px] gap-1"
+                            disabled={frota.status !== "DISPONÍVEL"}
+                            onClick={() => {
+                              const event = new CustomEvent("open-locar", {
+                                detail: { pranchaId: frota.frota },
+                              });
+                              window.dispatchEvent(event);
+                            }}
                           >
-                            <Edit2 size={16} />
-                            <span className="sr-only">Editar frota {frota.frota}</span>
+                            LOCAR 🛣️
                           </Button>
+                        )}
+                        {canManage && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEdit(frota)}
+                            >
+                              <Edit2 size={16} />
+                              <span className="sr-only">Editar frota {frota.frota}</span>
+                            </Button>
 
-                          {frota.status === "OFICINA" ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                              onClick={() => handleRelease(frota)}
-                              aria-label="Liberar da Oficina"
-                            >
-                              <CheckCircle2 size={18} />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              disabled={frota.status === "ALOCADO"}
-                              onClick={() => openWorkshopDialog(frota)}
-                              aria-label={
-                                frota.status === "ALOCADO"
-                                  ? "Frota em Operação (Indisponível para Oficina)"
-                                  : "Enviar para Oficina"
-                              }
-                            >
-                              <Wrench size={16} />
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredFrotas.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-40 text-center text-muted-foreground font-medium italic"
-                  >
-                    Nenhuma frota cadastrada ou encontrada.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                            {frota.status === "OFICINA" ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => handleRelease(frota)}
+                                aria-label="Liberar da Oficina"
+                              >
+                                <CheckCircle2 size={18} />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={frota.status === "ALOCADO"}
+                                onClick={() => openWorkshopDialog(frota)}
+                                aria-label="Enviar para Oficina"
+                              >
+                                <Wrench size={16} />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredFrotas.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="h-40 text-center text-muted-foreground font-medium italic"
+                    >
+                      Nenhuma frota cadastrada ou encontrada.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
 
-      {/* Mobile View */}
       <div className="md:hidden grid grid-cols-1 gap-4">
         {filteredFrotas.map((frota: Frota) => (
           <FrotaCard
@@ -250,65 +252,20 @@ export function FrotaList() {
             onRelease={handleRelease}
           />
         ))}
-        {filteredFrotas.length === 0 && (
-          <div className="p-8 text-center text-muted-foreground font-medium italic bg-muted/20 rounded-xl border border-dashed">
-            Nenhuma frota encontrada.
-          </div>
-        )}
       </div>
 
       <FrotaForm open={isFormOpen} onOpenChange={setIsFormOpen} frotaToEdit={frotaToEdit} />
 
-      {/* Workshop Dialog */}
       <Dialog open={isWorkshopDialogOpen} onOpenChange={setIsWorkshopDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase text-red-600">
               <Wrench /> Enviar para Oficina
             </DialogTitle>
-            <DialogDescription className="font-medium">
-              Confirmar o envio da frota para manutenção?
-            </DialogDescription>
           </DialogHeader>
 
           {frotaForWorkshop && (
             <div className="py-4 space-y-4">
-              <div className="bg-muted/50 p-4 rounded-lg space-y-2 border">
-                <div className="flex justify-between">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground">
-                    Frota:
-                  </span>
-                  <span className="font-black text-primary flex items-center gap-1">
-                    <Truck size={16} />
-                    {frotaForWorkshop.frota}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground">
-                    Placa:
-                  </span>
-                  <span className="font-bold">{frotaForWorkshop.placa}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground">
-                    Equipamento:
-                  </span>
-                  <span className="font-medium text-xs text-right">{frotaForWorkshop.nome}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground">
-                    Status atual:
-                  </span>
-                  <FrotaStatusBadge status={frotaForWorkshop.status} />
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground">
-                    Novo status:
-                  </span>
-                  <FrotaStatusBadge status="OFICINA" />
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
                   Justificativa de Manutenção *
@@ -327,13 +284,6 @@ export function FrotaList() {
                     <SelectItem value="Outros">Outros</SelectItem>
                   </SelectContent>
                 </Select>
-                {justification === "Outros" && (
-                  <Textarea
-                    placeholder="Descreva o motivo..."
-                    className="mt-2 text-sm"
-                    onChange={(e) => setJustification(e.target.value)}
-                  />
-                )}
               </div>
             </div>
           )}
@@ -342,16 +292,16 @@ export function FrotaList() {
             <Button
               variant="outline"
               onClick={() => setIsWorkshopDialogOpen(false)}
-              className="font-bold uppercase"
+              className="font-bold"
             >
               CANCELAR
             </Button>
             <Button
-              className="bg-red-600 hover:bg-red-700 font-black tracking-widest uppercase shadow-lg shadow-red-600/20"
+              className="bg-red-600 hover:bg-red-700 font-black"
               onClick={handleSendToWorkshop}
               disabled={!justification}
             >
-              ENVIAR PARA OFICINA
+              ENVIAR
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -359,11 +309,3 @@ export function FrotaList() {
     </div>
   );
 }
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
