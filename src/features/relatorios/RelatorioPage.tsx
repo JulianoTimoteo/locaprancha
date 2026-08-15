@@ -157,17 +157,18 @@ export function RelatorioPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-card p-4 sm:p-6 rounded-2xl border border-primary/10 shadow-sm glass">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
-            <BarChart size={24} className="sm:w-[28px] sm:h-[28px]" />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-card/60 backdrop-blur-md p-6 rounded-2xl border border-primary/10 shadow-xl relative overflow-hidden group">
+        <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/30" />
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+            <BarChart size={28} className="sm:w-[32px] sm:h-[32px]" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight" id="page-title">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase text-foreground/90" id="page-title">
               Relatórios Operacionais
             </h1>
-            <p className="text-[10px] sm:text-sm text-muted-foreground font-medium">
-              Histórico e desempenho das operações.
+            <p className="text-[10px] sm:text-xs text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-70">
+              Análise de Histórico • Eficiência de Frota
             </p>
           </div>
         </div>
@@ -201,33 +202,31 @@ export function RelatorioPage() {
       </div>
 
       {/* Toolbar / Buttons */}
-      <div className="flex flex-wrap items-center gap-2 justify-between">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col sm:flex-row items-center gap-3 justify-between">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
-            className="gap-2 font-bold h-11"
+            className="flex-1 sm:flex-none gap-2 font-black uppercase text-[10px] tracking-widest h-11 border-primary/10 hover:bg-muted"
             onClick={clearFilters}
             aria-label="Limpar todos os filtros"
           >
-            <X size={16} /> Limpar Filtros
+            <X size={14} /> Limpar
           </Button>
           <Button
             variant="outline"
-            className="gap-2 font-bold h-11 border-green-500/30 text-green-600 hover:bg-green-50"
+            className="flex-1 sm:flex-none gap-2 font-black uppercase text-[10px] tracking-widest h-11 border-emerald-500/20 text-emerald-600 hover:bg-emerald-50"
             onClick={shareWhatsApp}
             aria-label="Compartilhar via WhatsApp"
           >
-            <MessageSquare size={16} /> WhatsApp
+            <MessageSquare size={14} /> WhatsApp
           </Button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            className="gap-2 font-bold h-11 cyber-nav-btn-active shadow-lg"
-            onClick={exportPDF}
-          >
-            <FileDown size={18} /> Gerar PDF
-          </Button>
-        </div>
+        <Button
+          className="w-full sm:w-auto gap-2 font-black uppercase text-[11px] tracking-widest h-12 shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform"
+          onClick={exportPDF}
+        >
+          <FileDown size={18} /> Exportar PDF Profissional
+        </Button>
       </div>
 
       {/* Filters Bar */}
@@ -326,8 +325,7 @@ export function RelatorioPage() {
       </Card>
 
       {/* KPI Dashboard */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <h2 className="sr-only">KPIs de Desempenho</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4">
         <KPICard title="Total Operações" value={kpis.total} icon={TrendingUp} color="blue" />
         <KPICard
           title="Finalizadas"
@@ -344,8 +342,10 @@ export function RelatorioPage() {
           icon={AlertCircle}
           color="red"
         />
-        <KPICard title="Horas Totais" value={`${kpis.totalHoras}h`} icon={Timer} color="emerald" />
-        <KPICard title="Usuários" value={kpis.usuariosDistintos} icon={Users} color="indigo" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 opacity-80">
+        <KPICard title="Tempo Total" value={`${kpis.totalHoras}h`} icon={Timer} color="emerald" />
+        <KPICard title="Operadores" value={kpis.usuariosDistintos} icon={Users} color="indigo" />
         <KPICard title="Frotas" value={kpis.equipamentosDistintos} icon={Truck} color="amber" />
         <KPICard title="Frentes" value={kpis.frentesDistintas} icon={MapPin} color="cyan" />
       </div>
