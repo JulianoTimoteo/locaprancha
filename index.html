@@ -81,37 +81,60 @@
           margin-bottom: 20px;
         "
       ></div>
-      <h2 style="font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: -1px">
+      <h2 style="font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: -1px; color: #1e293b">
         Locaprancha
       </h2>
       <p
         style="
-          font-size: 12px;
-          color: #666;
-          margin-top: 10px;
-          font-weight: bold;
+          font-size: 10px;
+          color: #64748b;
+          margin-top: 8px;
+          font-weight: 800;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 2px;
         "
       >
-        Sincronizando ambiente seguro...
+        Sincronizando ambiente...
       </p>
 
-      <div id="error-diagnosis" style="display: none; margin-top: 20px; max-width: 300px">
-        <p style="font-size: 11px; color: #ef4444; margin-bottom: 15px; line-height: 1.4">
-          O sistema detectou uma falha na inicialização. Tentando recuperação automática...
-        </p>
+      <div id="error-diagnosis" style="display: none; margin-top: 30px; max-width: 320px; animation: fadeIn 0.5s ease-out">
+        <div style="background: #fef2f2; border: 1px solid #fee2e2; padding: 16px; border-radius: 12px; margin-bottom: 20px">
+          <p style="font-size: 12px; color: #991b1b; font-weight: 700; margin-bottom: 4px; text-transform: uppercase">
+            ⚠️ Falha na Inicialização
+          </p>
+          <p style="font-size: 11px; color: #b91c1c; line-height: 1.5; margin: 0">
+            Ocorreu um erro ao carregar o aplicativo. Isso pode ser causado por cache antigo ou instabilidade na conexão.
+          </p>
+        </div>
+        
+        <button 
+          id="manual-reset-btn"
+          onclick="performHardReset()"
+          style="
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            width: 100%;
+          "
+        >
+          Limpar Cache e Tentar Novamente
+        </button>
       </div>
 
       <style>
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        #reset-storage-html:active {
-          transform: scale(0.95);
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #manual-reset-btn:hover { background: #0f172a; transform: translateY(-1px); }
+        #manual-reset-btn:active { transform: translateY(0); }
       </style>
       <script>
         // Versão v1.8.1 - Automatic Hard Recovery (No UI required)
