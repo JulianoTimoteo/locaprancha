@@ -72,13 +72,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sincronizar status quando o profile for carregado do cache ou da rede
   useEffect(() => {
     if (profile) {
+      let newStatus: AuthStatus = "PROFILE_OK";
       if (profile.status === "BLOQUEADO") {
-        setStatus("PROFILE_BLOCKED");
+        newStatus = "PROFILE_BLOCKED";
       } else if (profile.status === "INATIVO") {
-        setStatus("PROFILE_INACTIVE");
-      } else {
-        setStatus("PROFILE_OK");
+        newStatus = "PROFILE_INACTIVE";
       }
+
+      setStatus((prevStatus) => {
+        if (prevStatus !== newStatus) return newStatus;
+        return prevStatus;
+      });
     }
   }, [profile?.uid, profile?.status]);
 
