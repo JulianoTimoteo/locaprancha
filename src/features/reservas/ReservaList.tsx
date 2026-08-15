@@ -29,6 +29,7 @@ import {
   MapPin,
   Truck,
   AlertCircle,
+  Terminal,
   Hash,
 } from "lucide-react";
 import { formatReservaDateTime } from "@/lib/utils/reservaFormatting";
@@ -80,12 +81,14 @@ export function ReservaList() {
     relatorio: "",
   });
 
-  const canManage = hasPermission(profile, "usuarios"); // Simplificação baseada em permissão real
+  const canManage = isAdmin(profile);
   const canOperate = hasPermission(profile, "reservas");
 
   const filtered = useMemo(() => {
+    if (!reservas) return [];
+
     const sorted = [...reservas].sort((a, b) => {
-      const order = {
+      const order: Record<string, number> = {
         Iniciado: 1,
         Agendado: 2,
         Pendente: 3,
@@ -96,7 +99,7 @@ export function ReservaList() {
         Cancelado: 6,
         Recusado: 6,
       };
-      const getOrder = (s: string) => order[s as keyof typeof order] || 99;
+      const getOrder = (s: string) => order[s] || 99;
 
       if (getOrder(a.status) !== getOrder(b.status)) {
         return getOrder(a.status) - getOrder(b.status);
@@ -106,20 +109,32 @@ export function ReservaList() {
       const dateB = b.data || "0000-00-00";
       if (dateA !== dateB) return dateB.localeCompare(dateA);
 
-      const timeA = a.hora || "00:00";
-      const timeB = b.hora || "00:00";
+      const timeA = a.hora || a.horarioRetirada || "00:00";
+      const timeB = b.hora || b.horarioRetirada || "00:00";
       return timeB.localeCompare(timeA);
     });
 
+    const searchString = searchTerm.toLowerCase().trim();
     return sorted.filter((r) => {
-      const searchString = searchTerm.toLowerCase();
+      if (!searchString) {
+        // Apply RBAC filtering even without search
+        if (isGod(profile) || isAdmin(profile) || profile?.role === "LIDER") return true;
+        if (profile?.role === "MOTORISTA")
+          return (
+            r.motoristaId === profile.uid ||
+            ["Aprovado", "Agendado", "Iniciado", "Em Trânsito"].includes(r.status)
+          );
+        return r.userId === profile?.uid || r.solicitanteId === profile?.uid;
+      }
+
       const matchesSearch =
         (r.pranchaId || "").toLowerCase().includes(searchString) ||
         (r.solicitanteNome || "").toLowerCase().includes(searchString) ||
-        (r.frenteTrabalho || "").toLowerCase().includes(searchString) ||
+        (r.frenteTrabalho || r.frenteId || "").toLowerCase().includes(searchString) ||
         (r.origem || "").toLowerCase().includes(searchString) ||
         (r.destino || "").toLowerCase().includes(searchString) ||
-        (r.status || "").toLowerCase().includes(searchString);
+        (r.status || "").toLowerCase().includes(searchString) ||
+        (r.equipamentoNome || "").toLowerCase().includes(searchString);
 
       if (!matchesSearch) return false;
 
@@ -202,7 +217,7 @@ export function ReservaList() {
 
   const handleRecusar = () => {
     if (!recusaModal.motivo) return;
-    updateReservaStatus(recusaModal.id, "Recusado", { motivo: recusaModal.motivo });
+    updateReservaStatus(recusaModal.id, "Recusado", { id: "admin", nome: recusaModal.motivo });
     setRecusaModal({ open: false, id: "", motivo: "" });
   };
 
@@ -221,13 +236,54 @@ export function ReservaList() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-20 lg:pb-0">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-1 gap-4">
+      {/* Resumo de Status */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-1">
+        {[
+          {
+            label: "Em Operação",
+            count: (reservas || []).filter((r) => r.status === "Iniciado").length,
+            color: "bg-green-500",
+          },
+          {
+            label: "Agendados",
+            count: (reservas || []).filter(
+              (r) => r.status === "Agendado" || r.status === "Aprovado",
+            ).length,
+            color: "bg-blue-500",
+          },
+          {
+            label: "Em Trânsito",
+            count: (reservas || []).filter((r) => r.status === "Em Trânsito").length,
+            color: "bg-purple-500",
+          },
+          {
+            label: "Pendentes",
+            count: (reservas || []).filter((r) => r.status === "Pendente").length,
+            color: "bg-yellow-500",
+          },
+        ].map((stat, i) => (
+          <div
+            key={i}
+            className="bg-card border rounded-xl p-3 shadow-sm border-l-4"
+            style={{ borderLeftColor: stat.color.replace("bg-", "") }}
+          >
+            <p className="text-[10px] font-black uppercase text-muted-foreground opacity-70">
+              {stat.label}
+            </p>
+            <p className="text-xl font-black text-primary">{stat.count}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-card/40 backdrop-blur-sm p-6 rounded-2xl border border-primary/5 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+          <Calendar size={80} />
+        </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight uppercase" id="page-title">
-            Agenda Operacional
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase text-foreground/90 flex items-center gap-3" id="page-title">
+            <Calendar className="text-primary w-8 h-8" /> Agenda Operacional
           </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm font-medium">
-            Controle de transportes e locações.
+          <p className="text-[10px] sm:text-xs text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-70">
+            Planejamento de Transportes • Logística Interna
           </p>
         </div>
 
@@ -256,28 +312,69 @@ export function ReservaList() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 px-1">
-        <h2 className="sr-only">Filtros da Agenda</h2>
-        <div className="relative flex-1 max-w-sm">
+      {/* Filtros Avançados */}
+      <div className="flex flex-col sm:flex-row gap-4 px-1 p-4 bg-muted/10 border rounded-xl shadow-sm">
+        <div className="relative flex-1">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             size={16}
           />
           <Input
-            placeholder="Buscar por prancha, equipamento..."
+            placeholder="Buscar (Frota, Solicitante, Frente)..."
             className="pl-10 h-11 bg-card shadow-sm font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Buscar por prancha ou equipamento"
           />
         </div>
         <Button
           variant="outline"
-          size="icon"
-          className="h-11 w-11 shrink-0 lg:hidden"
-          aria-label="Abrir filtros de agenda"
+          className="h-11 gap-2 font-black uppercase text-xs"
+          onClick={() => {
+            try {
+              const headers = [
+                "Data",
+                "Frota",
+                "Equipamento",
+                "Frente",
+                "Status",
+                "Origem",
+                "Destino",
+                "Solicitante",
+              ];
+              const rows = filtered.map((r) =>
+                [
+                  r.data || "",
+                  r.pranchaId || "",
+                  r.equipamentoNome || "",
+                  r.frenteTrabalho || r.frenteId || "",
+                  r.status || "",
+                  r.origem || "",
+                  r.destino || "",
+                  r.solicitanteNome || "",
+                ]
+                  .map((val) => `"${String(val).replace(/"/g, '""')}"`)
+                  .join(","),
+              );
+
+              const csvContent = "\uFEFF" + [headers.join(",")].concat(rows).join("\n");
+              const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.setAttribute("href", url);
+              link.setAttribute(
+                "download",
+                `agenda_operacional_${new Date().toISOString().split("T")[0]}.csv`,
+              );
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            } catch (err) {
+              console.error("Erro na exportação CSV:", err);
+            }
+          }}
         >
-          <Filter size={20} />
+          <Terminal size={16} /> Exportar
         </Button>
       </div>
 
@@ -293,7 +390,9 @@ export function ReservaList() {
             <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0 bg-muted/20">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-black text-primary">🚚 {reserva.pranchaId}</span>
+                  <span className="text-xl font-black text-primary">
+                    🚚 <span className="font-black">{reserva.pranchaId}</span>
+                  </span>
                   {reserva.tipoOperacao === "LOCACAO_DIRETA" && (
                     <Badge
                       variant="secondary"
@@ -401,118 +500,133 @@ export function ReservaList() {
       </div>
 
       {/* Desktop View: Table */}
-      <div className="hidden lg:block border rounded-xl bg-card overflow-hidden shadow-md">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="font-black text-xs uppercase">Data/Hora</TableHead>
-              <TableHead className="font-black text-xs uppercase">Frota</TableHead>
-              <TableHead className="font-black text-xs uppercase">Equipamento</TableHead>
-              <TableHead className="font-black text-xs uppercase">Frente Operacional</TableHead>
-              <TableHead className="font-black text-xs uppercase">Origem / Destino</TableHead>
-              <TableHead className="font-black text-xs uppercase">Solicitante</TableHead>
-              <TableHead className="font-black text-xs uppercase">Status</TableHead>
-              <TableHead className="text-right font-black text-xs uppercase">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((reserva) => (
-              <TableRow key={reserva.id} className="hover:bg-muted/20 transition-colors">
-                <TableCell className="font-bold whitespace-nowrap">
-                  <div className="flex flex-col text-xs">
-                    <span className="whitespace-pre-line leading-tight">
-                      {formatReservaDateTime(reserva)}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-black text-primary text-lg">
-                      🚚 {reserva.pranchaId || "N/A"}
-                    </span>
-                    {reserva.tipoOperacao === "LOCACAO_DIRETA" && (
-                      <span className="text-[8px] font-black bg-emerald-100 text-emerald-800 px-1 rounded w-fit uppercase">
-                        LOCAÇÃO
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-
-                <TableCell className="font-bold">
-                  <span className="text-sm font-bold text-primary">
-                    {reserva.equipamentoNome || "N/A"}
-                  </span>
-                </TableCell>
-
-                <TableCell className="font-bold">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                      {reserva.frenteTrabalho || reserva.frenteId}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col text-[10px] font-bold">
-                    <span className="text-muted-foreground uppercase">
-                      De: {reserva.origem || "N/A"}
-                    </span>
-                    <span className="text-primary uppercase">Para: {reserva.destino || "N/A"}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs font-medium text-muted-foreground">
-                  {reserva.solicitanteNome || "-"}
-                </TableCell>
-                <TableCell>{getStatusBadge(reserva)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    {reserva.status === "Pendente" && canManage && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:bg-green-50 font-black text-xs"
-                          onClick={() => updateReservaStatus(reserva.id, "Aprovado")}
-                        >
-                          ACEITAR
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:bg-red-50 font-black text-xs"
-                          onClick={() => setRecusaModal({ open: true, id: reserva.id, motivo: "" })}
-                        >
-                          RECUSAR
-                        </Button>
-                      </>
-                    )}
-                    {(reserva.status === "Aprovado" || reserva.status === "Agendado") &&
-                      canOperate && (
-                        <Button
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 font-black text-xs"
-                          onClick={() => updateReservaStatus(reserva.id, "Iniciado")}
-                        >
-                          INICIAR
-                        </Button>
-                      )}
-                    {(reserva.status === "Iniciado" || reserva.status === "Em Trânsito") &&
-                      canOperate && (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 font-black text-xs"
-                          onClick={() =>
-                            setConclusaoModal({ open: true, id: reserva.id, relatorio: "" })
-                          }
-                        >
-                          ENCERRAR ❎
-                        </Button>
-                      )}
-                  </div>
-                </TableCell>
+      <div className="hidden lg:block bg-card border rounded-2xl shadow-sm overflow-hidden border-b-4 border-b-primary mt-4">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow>
+                <TableHead className="font-black text-xs uppercase">Data/Hora</TableHead>
+                <TableHead className="font-black text-xs uppercase">Frota</TableHead>
+                <TableHead className="font-black text-xs uppercase">Equipamento</TableHead>
+                <TableHead className="font-black text-xs uppercase">Frente Operacional</TableHead>
+                <TableHead className="font-black text-xs uppercase">Origem / Destino</TableHead>
+                <TableHead className="font-black text-xs uppercase">Solicitante</TableHead>
+                <TableHead className="font-black text-xs uppercase">Status</TableHead>
+                <TableHead className="text-right font-black text-xs uppercase">Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((reserva) => (
+                <TableRow
+                  key={reserva.id}
+                  className={`hover:bg-muted/20 transition-colors ${
+                    reserva.status === "Iniciado"
+                      ? "bg-green-500/5 border-l-4 border-l-green-500"
+                      : reserva.status === "Em Trânsito"
+                        ? "bg-purple-500/5 border-l-4 border-l-purple-500"
+                        : ""
+                  }`}
+                >
+                  <TableCell className="font-bold whitespace-nowrap">
+                    <div className="flex flex-col text-xs">
+                      <span className="whitespace-pre-line leading-tight">
+                        {formatReservaDateTime(reserva)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-black text-primary text-lg">
+                        🚚 {reserva.pranchaId || "N/A"}
+                      </span>
+                      {reserva.tipoOperacao === "LOCACAO_DIRETA" && (
+                        <span className="text-[8px] font-black bg-emerald-100 text-emerald-800 px-1 rounded w-fit uppercase">
+                          LOCAÇÃO
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="font-bold">
+                    <span className="text-sm font-bold text-primary">
+                      {reserva.equipamentoNome || "N/A"}
+                    </span>
+                  </TableCell>
+
+                  <TableCell className="font-bold">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        {reserva.frenteTrabalho || reserva.frenteId}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col text-[10px] font-bold">
+                      <span className="text-muted-foreground uppercase">
+                        De: {reserva.origem || "N/A"}
+                      </span>
+                      <span className="text-primary uppercase">
+                        Para: {reserva.destino || "N/A"}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-medium text-muted-foreground">
+                    {reserva.solicitanteNome || "-"}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(reserva)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {reserva.status === "Pendente" && canManage && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-600 hover:bg-green-50 font-black text-xs"
+                            onClick={() => updateReservaStatus(reserva.id, "Aprovado")}
+                          >
+                            ACEITAR
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-red-50 font-black text-xs"
+                            onClick={() =>
+                              setRecusaModal({ open: true, id: reserva.id, motivo: "" })
+                            }
+                          >
+                            RECUSAR
+                          </Button>
+                        </>
+                      )}
+                      {(reserva.status === "Aprovado" || reserva.status === "Agendado") &&
+                        canOperate && (
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 font-black text-xs"
+                            onClick={() => updateReservaStatus(reserva.id, "Iniciado")}
+                          >
+                            INICIAR
+                          </Button>
+                        )}
+                      {(reserva.status === "Iniciado" || reserva.status === "Em Trânsito") &&
+                        canOperate && (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 font-black text-xs"
+                            onClick={() =>
+                              setConclusaoModal({ open: true, id: reserva.id, relatorio: "" })
+                            }
+                          >
+                            ENCERRAR ❎
+                          </Button>
+                        )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {filtered.length === 0 && (
