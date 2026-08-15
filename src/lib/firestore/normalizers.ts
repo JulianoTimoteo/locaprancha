@@ -55,9 +55,9 @@ export function normalizeFrota(id: string, data: Record<string, unknown>): Frota
     tipo: (data.tipo as string) || "",
     status: normalizeFrotaStatus(data.status),
     justificativaManutencao: (data.justificativaManutencao as string) || "",
-    createdAt: data.createdAt as Timestamp || null,
+    createdAt: (data.createdAt as Timestamp) || null,
     createdBy: (data.createdBy as string) || "",
-    updatedAt: data.updatedAt as Timestamp || null,
+    updatedAt: (data.updatedAt as Timestamp) || null,
     updatedBy: (data.updatedBy as string) || "",
   };
 }
@@ -88,11 +88,11 @@ export function normalizeReserva(id: string, data: Record<string, unknown>): Res
     frenteTrabalho: (data.frenteTrabalho as string) || "",
     motoristaId: (data.motoristaId as string) || null,
     motoristaNome: (data.motoristaNome as string) || "",
-    horarioInicioReal: data.horarioInicioReal as Timestamp || null,
-    horarioFimReal: data.horarioFimReal as Timestamp || null,
+    horarioInicioReal: (data.horarioInicioReal as Timestamp) || null,
+    horarioFimReal: (data.horarioFimReal as Timestamp) || null,
     observacao: (data.observacao as string) || "",
     motivoRecusa: (data.motivoRecusa as string) || "",
-    createdAt: data.createdAt as Timestamp || null,
+    createdAt: (data.createdAt as Timestamp) || null,
     relatorio: (data.relatorio as string) || null,
   };
 }
@@ -112,7 +112,7 @@ export function normalizeUserProfile(id: string, data: Record<string, unknown>):
     status: (data.status as UserProfile["status"]) || "ATIVO",
     criadoEm: (data.criadoEm || data.createdAt) as Timestamp,
     atualizadoEm: (data.atualizadoEm || data.updatedAt) as Timestamp,
-    ultimoAcesso: data.ultimoAcesso as Timestamp || null,
+    ultimoAcesso: (data.ultimoAcesso as Timestamp) || null,
   };
 }
 
