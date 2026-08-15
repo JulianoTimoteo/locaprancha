@@ -33,6 +33,11 @@ export function IndexPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6 sm:space-y-8 font-sans pb-24 lg:pb-8">
+      <div className="flex justify-end mb-4">
+        <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-widest px-3 py-1">
+          Fez o deploy
+        </Badge>
+      </div>
       {/* Mensagem de Boas-vindas e Contexto do Teste */}
       <div className="bg-card border rounded-2xl p-6 sm:p-8 space-y-4 shadow-sm relative overflow-hidden group border-l-4 border-l-primary">
         <div className="flex flex-col gap-2">
