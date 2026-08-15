@@ -45,6 +45,7 @@ export function ReservaForm({
     pranchaId: "",
     frenteId: "",
     equipamentoId: "",
+    equipamentoManual: "",
     data: new Date().toISOString().split("T")[0] as string,
     horarioRetirada: "08:00",
     horarioDevolucaoPrevisto: "17:00",
@@ -104,15 +105,27 @@ export function ReservaForm({
     e.preventDefault();
     if (!formData.pranchaId || !formData.frenteId) return;
 
+    if (formData.frenteId === "OUTROS" && !formData.equipamentoManual.trim()) {
+      toast.error("Informe o equipamento/frota.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const eq = equipamentos.find((e) => e.id === formData.equipamentoId);
+      const equipamentoNome =
+        formData.frenteId === "OUTROS"
+          ? formData.equipamentoManual.trim()
+          : (() => {
+              const eq = equipamentos.find((e) => e.id === formData.equipamentoId);
+              return eq ? `[${eq.codigo}] - ${eq.nome}` : "";
+            })();
+
       const payload = {
         ...formData,
-        equipamentoNome: eq ? `[${eq.codigo}] - ${eq.nome}` : "",
+        equipamentoNome,
         frenteTrabalho: formData.frenteTrabalho || formData.frenteId,
         hora: formData.horarioRetirada,
-        solicitante: "", // Will be populated by the hook
+        solicitante: "",
       };
 
       if (isAlocacaoDireta && alocarDireto) {
@@ -126,6 +139,7 @@ export function ReservaForm({
         pranchaId: "",
         frenteId: "",
         equipamentoId: "",
+        equipamentoManual: "",
         data: new Date().toISOString().split("T")[0] as string,
         horarioRetirada: "08:00",
         horarioDevolucaoPrevisto: "17:00",
@@ -255,47 +269,57 @@ export function ReservaForm({
               <label className="text-sm font-bold uppercase text-[10px] text-muted-foreground">
                 Equipamento
               </label>
-              <Select
-                value={formData.equipamentoId}
-                onValueChange={(val) => {
-                  const eq = equipamentos.find((e) => e.id === val);
-                  if (eq) {
-                    const frenteRelacionada = frentes.find(
-                      (f) =>
-                        f.id === eq.frenteId ||
-                        (eq.tipo && f.nome.toUpperCase() === eq.tipo.toUpperCase()) ||
-                        (eq.tipo &&
-                          eq.tipo.includes("FRENTE") &&
-                          f.nome.includes(eq.tipo.split("FRENTE")[1]?.trim() || "")),
-                    );
+              {formData.frenteId === "OUTROS" ? (
+                <Input
+                  value={formData.equipamentoManual}
+                  onChange={(e) => setFormData({ ...formData, equipamentoManual: e.target.value })}
+                  placeholder="Digite a frota/equipamento"
+                  className="font-bold"
+                  required={formData.frenteId === "OUTROS"}
+                />
+              ) : (
+                <Select
+                  value={formData.equipamentoId}
+                  onValueChange={(val) => {
+                    const eq = equipamentos.find((e) => e.id === val);
+                    if (eq) {
+                      const frenteRelacionada = frentes.find(
+                        (f) =>
+                          f.id === eq.frenteId ||
+                          (eq.tipo && f.nome.toUpperCase() === eq.tipo.toUpperCase()) ||
+                          (eq.tipo &&
+                            eq.tipo.includes("FRENTE") &&
+                            f.nome.includes(eq.tipo.split("FRENTE")[1]?.trim() || "")),
+                      );
 
-                    setFormData({
-                      ...formData,
-                      equipamentoId: val,
-                      frenteId: frenteRelacionada?.id || formData.frenteId,
-                      frenteTrabalho: frenteRelacionada?.nome || formData.frenteTrabalho,
-                    });
-                  } else {
-                    setFormData({ ...formData, equipamentoId: val });
-                  }
-                }}
-              >
-                <SelectTrigger className="font-bold">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipamentosFiltrados.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      <div className="flex flex-col text-left">
-                        <span className="font-bold">
-                          [{e.codigo}] - {e.nome}
-                        </span>
-                        <span className="text-[10px] opacity-70 uppercase">{e.tipo}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      setFormData({
+                        ...formData,
+                        equipamentoId: val,
+                        frenteId: frenteRelacionada?.id || formData.frenteId,
+                        frenteTrabalho: frenteRelacionada?.nome || formData.frenteTrabalho,
+                      });
+                    } else {
+                      setFormData({ ...formData, equipamentoId: val });
+                    }
+                  }}
+                >
+                  <SelectTrigger className="font-bold">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipamentosFiltrados.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        <div className="flex flex-col text-left">
+                          <span className="font-bold">
+                            [{e.codigo}] - {e.nome}
+                          </span>
+                          <span className="text-[10px] opacity-70 uppercase">{e.tipo}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -306,7 +330,12 @@ export function ReservaForm({
                 value={formData.frenteId}
                 onValueChange={(val) => {
                   const frente = frentes.find((f) => f.id === val);
-                  setFormData({ ...formData, frenteId: val, frenteTrabalho: frente?.nome || val });
+                  setFormData({
+                    ...formData,
+                    frenteId: val,
+                    frenteTrabalho: frente?.nome || val,
+                    equipamentoManual: "",
+                  });
                 }}
               >
                 <SelectTrigger className="font-bold">
@@ -318,6 +347,7 @@ export function ReservaForm({
                       {f.nome}
                     </SelectItem>
                   ))}
+                  <SelectItem value="OUTROS">OUTROS</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -329,6 +359,7 @@ export function ReservaForm({
               value={formData.observacao}
               onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
               placeholder="Informações adicionais..."
+              required={formData.frenteId === "OUTROS"}
             />
           </div>
 
