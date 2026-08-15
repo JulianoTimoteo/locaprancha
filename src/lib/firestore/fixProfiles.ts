@@ -19,7 +19,14 @@ export async function fixUserProfiles() {
   const usersColl = collection(db, "usuarios");
   const snapshot = await getDocs(usersColl);
 
-  const emailMap = new Map<string, (Record<string, unknown> & { id: string; uid?: string; nickname?: string })[]>();
+  const emailMap = new Map<
+    string,
+    (Record<string, unknown> & {
+      id: string;
+      uid?: string;
+      nickname?: string;
+    })[]
+  >();
 
   snapshot.docs.forEach((doc) => {
     const data = doc.data();
