@@ -113,15 +113,3 @@ export interface Reserva {
   createdAt: any | null;
   testeSistema?: boolean;
 }
-
-export interface AuditLog {
-  id: string;
-  uid: string;
-  usuario: string;
-  acao: string;
-  entidade: string;
-  entidadeId: string;
-  timestamp: any;
-  dadosAnteriores?: any;
-  dadosNovos?: any;
-}

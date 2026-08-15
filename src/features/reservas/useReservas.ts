@@ -18,7 +18,6 @@ import { db } from "@/lib/firebase";
 import { Reserva, AgendaStatus } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthContext";
-import { logAction } from "@/lib/audit";
 import { normalizeFrotaStatus } from "@/lib/firestore/normalizers";
 import { subscribeToAgenda } from "@/lib/firestore/agenda";
 import { canTransitionTo } from "@/lib/domain/reservaStateMachine";
@@ -106,14 +105,6 @@ export function useReservas() {
         updatedAt: serverTimestamp(),
       };
       const docRef = await addDoc(collection(db, "agenda"), payload);
-      await logAction({
-        uid: user.uid,
-        usuario: profile.name,
-        acao: "CREATE_RESERVA",
-        entidade: "agenda",
-        entidadeId: docRef.id,
-        detalhes: `Solicitação criada: ${reservaData.origem || "N/A"} -> ${reservaData.destino || "N/A"}`,
-      });
       toast.success("Solicitação enviada com sucesso!");
       return docRef.id;
     } catch (error: any) {
@@ -162,14 +153,6 @@ export function useReservas() {
         });
       });
 
-      await logAction({
-        uid: user.uid,
-        usuario: profile.name,
-        acao: "ALOCACAO_DIRETA",
-        entidade: "agenda",
-        entidadeId: newId,
-        detalhes: `Alocação direta de ${payload.pranchaId}`,
-      });
       toast.success("Equipamento alocado e serviço iniciado!");
       return newId;
     } catch (error: any) {
@@ -270,15 +253,6 @@ export function useReservas() {
         }
 
         transaction.update(reservaRef, updates);
-      });
-
-      await logAction({
-        uid: user.uid,
-        usuario: profile.name,
-        acao: "ATUALIZAR_STATUS",
-        entidade: "agenda",
-        entidadeId: id,
-        detalhes: `Status alterado de ${oldReserva.status} para ${status}`,
       });
 
       toast.success(`Status atualizado para ${status}`);

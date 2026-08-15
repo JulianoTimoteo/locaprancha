@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }, 10_000);
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user: User) => {
       clearTimeout(safetyTimeout);
       setUser(user);
       setAuthLoading(false);

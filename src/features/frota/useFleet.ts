@@ -16,7 +16,6 @@ import { db } from "@/lib/firebase";
 import { Frota, StatusFrota } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthContext";
-import { logAction, AuditAction } from "@/lib/audit";
 import { normalizeFrota } from "@/lib/firestore/normalizers";
 import { persistence } from "@/lib/firestore/persistence";
 
@@ -78,18 +77,6 @@ export function useFleet() {
 
       const docRef = await addDoc(collection(db, "frotas"), payload);
 
-      if (profile) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "CREATE_FROTA",
-          "frotas",
-          docRef.id,
-          null,
-          payload,
-        );
-      }
-
       toast.success("Frota adicionada");
       return docRef.id;
     } catch (e) {
@@ -127,18 +114,6 @@ export function useFleet() {
 
       await updateDoc(doc(db, "frotas", id), payload);
 
-      if (profile && old) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "UPDATE_FROTA",
-          "frotas",
-          id,
-          old,
-          payload,
-        );
-      }
-
       toast.success("Frota atualizada");
     } catch (e) {
       console.error(e);
@@ -166,25 +141,6 @@ export function useFleet() {
 
       await updateDoc(doc(db, "frotas", id), payload);
 
-      const actionMap: Record<StatusFrota, AuditAction> = {
-        OFICINA: "SEND_FROTA_TO_WORKSHOP",
-        DISPONÍVEL:
-          old.status === "OFICINA" ? "RELEASE_FROTA_FROM_WORKSHOP" : "STATUS_FROTA_CHANGED",
-        ALOCADO: "STATUS_FROTA_CHANGED",
-      };
-
-      if (profile) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          actionMap[newStatus] as any,
-          "frotas",
-          id,
-          { status: old.status },
-          { status: newStatus, justificativa },
-        );
-      }
-
       toast.success(`Frota ${newStatus === "OFICINA" ? "enviada para oficina" : "liberada"}`);
     } catch (e) {
       console.error(e);
@@ -197,18 +153,6 @@ export function useFleet() {
     try {
       const old = frotas.find((f) => f.id === id);
       await deleteDoc(doc(db, "frotas", id));
-
-      if (profile && old) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "DELETE_FROTA",
-          "frotas",
-          id,
-          old,
-          null,
-        );
-      }
 
       toast.success("Frota removida");
     } catch (e) {

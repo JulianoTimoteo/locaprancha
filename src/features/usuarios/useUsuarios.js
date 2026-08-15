@@ -14,7 +14,6 @@ import {
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthContext";
-import { logAction } from "@/lib/audit";
 import { normalizeUserProfile } from "@/lib/firestore/normalizers";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { secondaryAuth } from "@/lib/firebase";
@@ -91,36 +90,14 @@ export function useUsuarios() {
         nivelAcesso: data.perfil,
       };
       await setDoc(userDocRef, newUser);
-      await logAction(
-        profile.uid,
-        profile.nickname || profile.name,
-        "CREATE_USER",
-        "USUARIO",
-        nickname,
-        null,
-        newUser,
-      );
       toast.success("Usuário criado com sucesso no Auth e Firestore.");
       return uid;
     } catch (e) {
       console.error(e);
-      // Tratamento específico para e-mail já em uso (Instrução do Plano)
       if (e.code === "auth/email-already-in-use") {
         toast.error(
           "Este e-mail já está vinculado a uma conta no Firebase Auth. Use o mecanismo de Auto-Migração realizando o login com este e-mail.",
         );
-        // Log de erro de segurança/duplicação
-        if (profile) {
-          logAction(
-            profile.uid,
-            profile.nickname || profile.name,
-            "CREATE_USER_FAILED",
-            "USUARIO",
-            data.email || data.nickname,
-            null,
-            { error: "email-already-in-use" },
-          );
-        }
       } else {
         toast.error("Erro ao criar usuário: " + (e.message || "Erro desconhecido"));
       }
@@ -154,15 +131,6 @@ export function useUsuarios() {
         }
       }
       await updateDoc(doc(db, "usuarios", uid), updates);
-      await logAction(
-        profile.uid,
-        profile.nickname || profile.name,
-        "UPDATE_USER",
-        "USUARIO",
-        old.nickname,
-        old,
-        updates,
-      );
       toast.success("Usuário atualizado");
     } catch (e) {
       toast.error("Erro ao atualizar usuário");
@@ -182,15 +150,6 @@ export function useUsuarios() {
         return;
       }
       await updateDoc(doc(db, "usuarios", uid), { status, atualizadoEm: serverTimestamp() });
-      await logAction(
-        profile.uid,
-        profile.nickname || profile.name,
-        action,
-        "USUARIO",
-        old.nickname,
-        old.status,
-        status,
-      );
       toast.success(`Usuário ${status === "ATIVO" ? "desbloqueado" : "bloqueado"}`);
     } catch (e) {
       toast.error("Erro ao alterar status");
@@ -214,15 +173,6 @@ export function useUsuarios() {
         toast.info("Usuário possui histórico e foi bloqueado permanentemente.");
       } else {
         await deleteDoc(doc(db, "usuarios", uid));
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "DELETE_USER",
-          "USUARIO",
-          old.nickname,
-          old,
-          null,
-        );
         toast.success("Usuário removido");
       }
     } catch (e) {

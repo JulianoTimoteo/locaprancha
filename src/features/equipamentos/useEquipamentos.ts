@@ -16,7 +16,6 @@ import { db } from "@/lib/firebase";
 import { Equipamento } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthContext";
-import { logAction } from "@/lib/audit";
 
 export function useEquipamentos() {
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
@@ -43,17 +42,6 @@ export function useEquipamentos() {
         createdAt: serverTimestamp(),
       };
       const docRef = await addDoc(collection(db, "equipamentos"), payload);
-      if (profile) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "CREATE_EQUIPAMENTO",
-          "EQUIPAMENTO",
-          data.codigo,
-          null,
-          payload,
-        );
-      }
       return docRef.id;
     } catch (e: any) {
       console.error("Erro ao adicionar equipamento:", e);
@@ -71,18 +59,6 @@ export function useEquipamentos() {
         updatedAt: serverTimestamp(),
       };
       await updateDoc(docRef, updates);
-
-      if (profile && old) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "UPDATE_EQUIPAMENTO",
-          "EQUIPAMENTO",
-          id,
-          old,
-          updates,
-        );
-      }
       return true;
     } catch (e: any) {
       console.error("Erro ao atualizar equipamento:", e);
@@ -95,17 +71,6 @@ export function useEquipamentos() {
     try {
       const old = equipamentos.find((e) => e.id === id);
       await deleteDoc(doc(db, "equipamentos", id));
-      if (profile && old) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "DELETE_EQUIPAMENTO",
-          "EQUIPAMENTO",
-          old.codigo,
-          old,
-          null,
-        );
-      }
       toast.success("Equipamento removido");
     } catch (e) {
       toast.error("Erro ao remover equipamento");

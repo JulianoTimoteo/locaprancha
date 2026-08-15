@@ -13,7 +13,7 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Reserva, Frota, AuditLog, UserRole } from "@/types";
+import { Reserva, Frota, UserRole } from "@/types";
 import {
   normalizeReserva,
   normalizeFrota,
@@ -81,18 +81,6 @@ export class SystemValidator {
     };
     this.steps.push(fullStep);
     await addDoc(collection(db, "system_test_steps"), fullStep);
-
-    await addDoc(collection(db, "audit_logs"), {
-      uid: this.userId,
-      usuario: this.userName,
-      acao: "SYSTEM_TEST_RUN",
-      entidade: "system_test",
-      entidadeId: this.testRunId,
-      detalhes: `${fullStep.etapa}: ${fullStep.mensagem || ""}`,
-      timestamp: serverTimestamp(),
-      testRunId: this.testRunId,
-      testeSistema: true,
-    });
   }
 
   async runFullValidation(onProgress: (percent: number, message: string) => void) {

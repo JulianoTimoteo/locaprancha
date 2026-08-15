@@ -3,16 +3,7 @@
  * Define quais abas cada perfil pode acessar
  */
 export const DEFAULT_PERMISSIONS_BY_ROLE = {
-  GOD: [
-    "dashboard",
-    "reservas",
-    "pranchas",
-    "equipamentos",
-    "frentes",
-    "relatorios",
-    "usuarios",
-    "auditoria",
-  ],
+  GOD: ["dashboard", "reservas", "pranchas", "equipamentos", "frentes", "relatorios", "usuarios"],
   ADMINISTRADOR: [
     "dashboard",
     "reservas",
@@ -21,7 +12,6 @@ export const DEFAULT_PERMISSIONS_BY_ROLE = {
     "frentes",
     "relatorios",
     "usuarios",
-    "auditoria",
   ],
   LIDER: ["dashboard", "reservas", "pranchas", "equipamentos", "frentes", "relatorios"],
   SOLICITANTE: ["dashboard", "reservas"],

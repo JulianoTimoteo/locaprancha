@@ -13,7 +13,6 @@ import { db } from "@/lib/firebase";
 import { Frente } from "@/types";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthContext";
-import { logAction } from "@/lib/audit";
 
 export function useFrentes() {
   const [frentes, setFrentes] = useState<Frente[]>([]);
@@ -36,17 +35,6 @@ export function useFrentes() {
   const addFrente = async (data: Omit<Frente, "id">) => {
     try {
       const docRef = await addDoc(collection(db, "frentes"), data);
-      if (profile) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "CREATE_FRENTE",
-          "FRENTE",
-          data.nome,
-          null,
-          data,
-        );
-      }
       toast.success("Frente adicionada com sucesso");
       return docRef.id;
     } catch (e: any) {
@@ -76,20 +64,6 @@ export function useFrentes() {
 
       const docRef = doc(db, "frentes", id);
       await updateDoc(docRef, dataToUpdate);
-
-      if (profile && old) {
-        // Envia apenas o ID da entidade para o log para evitar problemas com nomes complexos
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "UPDATE_FRENTE",
-          "FRENTE",
-          id,
-          old,
-          dataToUpdate,
-        );
-      }
-
       toast.success("Frente atualizada");
       return true;
     } catch (e: any) {
@@ -105,17 +79,6 @@ export function useFrentes() {
     try {
       const old = frentes.find((f) => f.id === id);
       await deleteDoc(doc(db, "frentes", id));
-      if (profile && old) {
-        await logAction(
-          profile.uid,
-          profile.nickname || profile.name,
-          "DELETE_FRENTE",
-          "FRENTE",
-          old.nome,
-          old,
-          null,
-        );
-      }
       toast.success("Frente removida");
     } catch (e) {
       toast.error("Erro ao remover frente");

@@ -6,7 +6,6 @@ import {
   Frente,
   AgendaStatus,
   Reserva,
-  AuditLog,
   StatusFrota,
 } from "@/types";
 

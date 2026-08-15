@@ -40,7 +40,6 @@ describe("permissions", () => {
     const god = makeProfile({ role: "GOD" });
     expect(isGod(god)).toBe(true);
     expect(isAdmin(god)).toBe(true);
-    expect(hasPermission(god, "auditoria")).toBe(true);
     expect(canAccessDeveloper(god)).toBe(true);
   });
 
@@ -50,7 +49,6 @@ describe("permissions", () => {
     expect(isAdmin(admin)).toBe(true);
     expect(hasPermission(admin, "usuarios")).toBe(true);
     expect(canAccessDeveloper(admin)).toBe(false);
-    expect(hasPermission(admin, "auditoria")).toBe(false);
   });
 
   it("LIDER has fleet and reservation access", () => {
@@ -85,10 +83,10 @@ describe("permissions", () => {
   it("custom permissions override role defaults", () => {
     const custom = makeProfile({
       role: "SOLICITANTE",
-      permissions: ["dashboard", "reservas", "auditoria"],
+      permissions: ["dashboard", "reservas", "usuarios"],
     });
-    expect(hasPermission(custom, "auditoria")).toBe(true);
-    expect(hasPermission(custom, "usuarios")).toBe(false);
+    expect(hasPermission(custom, "usuarios")).toBe(true);
+    expect(hasPermission(custom, "relatorios")).toBe(false);
   });
 
   it("DEFAULT_PERMISSIONS_BY_ROLE covers all roles", () => {

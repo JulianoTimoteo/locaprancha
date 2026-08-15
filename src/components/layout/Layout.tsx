@@ -14,8 +14,6 @@ import {
   Moon,
   HardHat,
   BarChart,
-  BarChart3,
-  ShieldCheck,
   Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,9 +53,7 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
     { id: "equipamentos", label: "Equipamentos", icon: Truck },
     { id: "frentes", label: "Frentes", icon: MapPin },
     { id: "relatorios", label: "Relatórios", icon: BarChart },
-    { id: "analise-coa", label: "Análise COA", icon: BarChart3 },
     { id: "usuarios", label: "Usuários", icon: Users },
-    { id: "auditoria", label: "Auditoria", icon: ShieldCheck },
   ];
 
   const filteredMenu = menuItems.filter((item) => canAccessTab(profile, item.id));
@@ -227,14 +223,6 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
                       active: activeView === "relatorios",
                       onClick: () => onNavigate("relatorios"),
                       hidden: !canAccessTab(profile, "relatorios"),
-                    },
-                    {
-                      id: "auditoria",
-                      label: "Auditoria",
-                      icon: ShieldCheck,
-                      active: activeView === "auditoria",
-                      onClick: () => onNavigate("auditoria"),
-                      hidden: !isGod(profile),
                     },
                     {
                       id: "usuarios",

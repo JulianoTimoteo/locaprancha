@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { isAdmin, isGod } from "@/lib/permissions/permissions";
-import { Frota, Reserva, AuditLog } from "@/types";
+import { Frota, Reserva } from "@/types";
 import { subscribeToFrotas } from "@/lib/firestore/frotas";
 import { subscribeToAgenda } from "@/lib/firestore/agenda";
-import { subscribeToAuditLogs } from "@/lib/firestore/auditLogs";
 import { combineDateAndTime } from "@/lib/utils";
 import { persistence } from "@/lib/firestore/persistence";
 
@@ -12,9 +11,6 @@ export function useDashboardData() {
   const { profile } = useAuth();
   const [pranchas, setPranchas] = useState<Frota[]>(() => persistence.get<Frota[]>("frotas") || []);
   const [agenda, setAgenda] = useState<Reserva[]>(() => persistence.get<Reserva[]>("agenda") || []);
-  const [logs, setLogs] = useState<AuditLog[]>(
-    () => persistence.get<AuditLog[]>("audit_logs") || [],
-  );
   const [loading, setLoading] = useState(!persistence.get("frotas"));
   const [error, setError] = useState<string | null>(null);
 
@@ -27,18 +23,12 @@ export function useDashboardData() {
     const unsubAgenda = subscribeToAgenda((data) => {
       setAgenda(data);
       persistence.save("agenda", data);
-    }, profile);
-
-    const unsubLogs = subscribeToAuditLogs((data) => {
-      setLogs(data);
-      persistence.save("audit_logs", data);
       setLoading(false);
-    });
+    }, profile);
 
     return () => {
       unsubFrotas?.();
       unsubAgenda?.();
-      unsubLogs?.();
     };
   }, [profile]);
 
@@ -79,5 +69,5 @@ export function useDashboardData() {
     })
     .slice(0, 10);
 
-  return { stats, reservas: proximosTransportes, logs, loading, error };
+  return { stats, reservas: proximosTransportes, loading, error };
 }

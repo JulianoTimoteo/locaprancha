@@ -15,7 +15,7 @@ export function Dashboard() {
     document.title = "Dashboard Operacional | Locaprancha";
   }, []);
 
-  const { stats, reservas, logs, loading, error } = useDashboardData();
+  const { stats, reservas, loading, error } = useDashboardData();
   const { profile } = useAuth();
 
   const getStatusBadgeHome = (reserva: any) => {

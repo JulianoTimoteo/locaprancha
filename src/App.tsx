@@ -33,7 +33,6 @@ const EquipamentoList = lazy(() =>
 const RelatorioPage = lazy(() =>
   import("@/features/relatorios/RelatorioPage").then((m) => ({ default: m.RelatorioPage })),
 );
-// Módulo Análise COA removido por solicitação
 
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -229,7 +228,6 @@ export default function App() {
                 <RelatorioPage />
               </ErrorBoundary>
             )}
-            {/* Módulo Análise COA removido por solicitação */}
             {currentView === "usuarios" && canAccessTab(profile, "usuarios") && (
               <ErrorBoundary area="Usuarios">
                 <UsuarioList />

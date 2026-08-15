@@ -10,7 +10,6 @@ import {
   getDocs,
   limit,
 } from "firebase/firestore";
-import { logAction } from "@/lib/audit";
 
 /**
  * Procura um perfil operacional órfão pelo e-mail do usuário autenticado.
@@ -54,20 +53,6 @@ export async function autoMigrateProfile(authUser: any): Promise<boolean> {
       };
 
       await setDoc(exactDocRef, newData);
-
-      // 4. Registrar a migração
-      const displayName =
-        (oldData["nickname"] as string) || (oldData["name"] as string) || authUser.email;
-
-      await logAction(
-        authUser.uid,
-        displayName,
-        "MIGRATE_USER",
-        "USUARIO",
-        oldId,
-        { oldId },
-        { newUid: authUser.uid },
-      );
 
       return true;
     }

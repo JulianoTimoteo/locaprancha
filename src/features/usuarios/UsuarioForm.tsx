@@ -231,47 +231,38 @@ export function UsuarioForm({ open, onOpenChange, userToEdit }: UsuarioFormProps
                 { id: "equipamentos", label: "Equipamentos" },
                 { id: "frentes", label: "Frentes" },
                 { id: "relatorios", label: "Relatórios" },
-                { id: "analise-coa", label: "Análise COA" },
                 { id: "usuarios", label: "Gestão Usuários" },
-                { id: "auditoria", label: "Auditoria" },
-              ]
-                .filter((p) => p.id !== "auditoria" || isGod)
-                .map((perm) => (
-                  <div key={perm.id} className="flex flex-col space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`perm-${perm.id}`}
-                        checked={formData.permissions.includes(perm.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({
-                              ...formData,
-                              permissions: [...formData.permissions, perm.id],
-                            });
-                          } else {
-                            setFormData({
-                              ...formData,
-                              permissions: formData.permissions.filter((p) => p !== perm.id),
-                            });
-                          }
-                        }}
-                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <label
-                        htmlFor={`perm-${perm.id}`}
-                        className="text-xs font-bold cursor-pointer uppercase"
-                      >
-                        {perm.label}
-                      </label>
-                    </div>
-                    {perm.id === "auditoria" && (
-                      <p className="text-[9px] text-muted-foreground leading-tight italic ml-6">
-                        * O detalhamento completo da auditoria é restrito ao nível GOD.
-                      </p>
-                    )}
+              ].map((perm) => (
+                <div key={perm.id} className="flex flex-col space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`perm-${perm.id}`}
+                      checked={formData.permissions.includes(perm.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData({
+                            ...formData,
+                            permissions: [...formData.permissions, perm.id],
+                          });
+                        } else {
+                          setFormData({
+                            ...formData,
+                            permissions: formData.permissions.filter((p) => p !== perm.id),
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label
+                      htmlFor={`perm-${perm.id}`}
+                      className="text-xs font-bold cursor-pointer uppercase"
+                    >
+                      {perm.label}
+                    </label>
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
           </div>
 

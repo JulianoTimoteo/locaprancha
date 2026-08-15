@@ -44,6 +44,16 @@ export function LoginPage() {
     }
   }, []);
 
+  const normalizarNickname = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, ".")
+      .replace(/\.+/g, ".")
+      .replace(/(^\.|\.$)/g, "");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -53,9 +63,10 @@ export function LoginPage() {
 
       // 1. Resolver Nickname para E-mail (Mecanismo de Conveniência)
       if (!email.includes("@")) {
+        const normalizedNickname = normalizarNickname(email);
         const q = query(
           collection(db, "usuarios"),
-          where("nickname", "==", email.toLowerCase()),
+          where("nickname", "==", normalizedNickname),
           limit(1),
         );
         const snap = await getDocs(q);
@@ -105,6 +116,7 @@ export function LoginPage() {
       );
 
       toast.success("Bem-vindo ao Locaprancha!");
+      setLoading(false);
     } catch (error: any) {
       console.error("Erro no login:", error);
       toast.error("Usuário ou senha inválidos.");
@@ -120,9 +132,10 @@ export function LoginPage() {
       let targetEmail = email;
 
       if (!email.includes("@")) {
+        const normalizedNickname = normalizarNickname(email);
         const q = query(
           collection(db, "usuarios"),
-          where("nickname", "==", email.toLowerCase()),
+          where("nickname", "==", normalizedNickname),
           limit(1),
         );
         const snap = await getDocs(q);
