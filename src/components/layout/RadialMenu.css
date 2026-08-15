@@ -1,12 +1,12 @@
 .menu-radial-container {
-  --toggle-size: 40px;
-  --item-size: 54px;
-  --radius: min(165px, 35vw);
+  --toggle-size: 48px;
+  --item-size: 56px;
+  --radius: min(150px, 35vw);
   --bg-gradient: transparent;
-  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --soft-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 
-  width: var(--toggle-size);
-  height: var(--toggle-size);
+  width: 64px;
+  height: 64px;
   position: relative;
   display: flex;
   justify-content: center;
@@ -17,7 +17,7 @@
 .radial-toggle-btn {
   width: var(--toggle-size);
   height: var(--toggle-size);
-  background: transparent;
+  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,12 +25,14 @@
   z-index: 100;
   cursor: pointer;
   transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: none;
-  box-shadow: none;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .dark .radial-toggle-btn {
-  background: transparent;
+  background: #1e293b;
+  border-color: rgba(255,255,255,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .radial-toggle-btn {
@@ -38,19 +40,21 @@
 }
 
 @keyframes pulse-soft {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 .is-open .radial-toggle-btn {
-  transform: rotate(180deg) scale(0.9);
+  transform: rotate(135deg) scale(0.9);
   animation: none;
-  box-shadow: 0 0 15px rgba(64, 128, 12, 0.2);
+  background: #1e293b;
+  color: white;
+  border-color: transparent;
+}
+
+.dark .is-open .radial-toggle-btn {
+  background: white;
+  color: #1e293b;
 }
 
 .hidden-checkbox {
@@ -70,7 +74,7 @@
 
 .is-open .radial-item {
   --arc-size: 110deg;
-  --start-angle: -180deg;
+  --start-angle: -190deg;
   --step: calc(var(--arc-size) / (var(--total) - 1));
   --angle: calc(var(--start-angle) + (var(--step) * var(--i)));
 
@@ -94,7 +98,7 @@
   position: relative;
 
   --arc-size: 110deg;
-  --start-angle: -180deg;
+  --start-angle: -190deg;
   --step: calc(var(--arc-size) / (var(--total) - 1));
   --angle-neg: calc(-1 * (var(--start-angle) + (var(--step) * var(--i))));
   transform: rotate(var(--angle-neg));
@@ -110,8 +114,9 @@
 }
 
 .radial-anchor-active {
-  background: #40800c !important;
-  box-shadow: 0 0 25px rgba(64, 128, 12, 0.5);
+  background: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 0 20px rgba(var(--primary), 0.4);
   transform: rotate(var(--angle-neg)) scale(1.15) !important;
   z-index: 10;
 }
@@ -125,62 +130,35 @@
   transform: scale(1.1);
 }
 
-.radial-anchor::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
-  pointer-events: none;
-}
-
-.radial-anchor:hover::after,
-.radial-anchor-active::after {
-  border-color: #40800c;
-  transform: scale(1.05);
-}
-
-.dark .radial-anchor:hover::after,
-.dark .radial-anchor-active::after {
-  border-color: #40800c;
-}
-
 .radial-label {
   position: absolute;
-  top: 50%;
-  right: calc(100% + 12px);
-  transform: translateY(-50%);
-  background: white;
-  color: #1e293b;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
   padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 800;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 900;
   text-transform: uppercase;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.dark .radial-label {
+  background: white;
+  color: #1e293b;
 }
 
 .radial-anchor:hover .radial-label {
   opacity: 1;
+  transform: translateX(-50%) translateY(-2px);
 }
 
-.radial-label.opacity-100 {
-  opacity: 1;
-}
-
-.dark .radial-label {
-  background: #1e293b;
-  color: white;
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Garantir que labels apareçam corretamente no hover quando aberto */
 .is-open .radial-item .radial-label {
   display: block;
 }
