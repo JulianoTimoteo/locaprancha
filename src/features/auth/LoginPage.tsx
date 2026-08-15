@@ -107,6 +107,7 @@ export function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[LOGIN] handleLogin chamado", { email, loading });
     if (loading) return;
     setLoading(true);
     let targetEmail = email;
