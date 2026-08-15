@@ -54,9 +54,9 @@ export function normalizeFrota(id: string, data: Record<string, unknown>): Frota
     tipo: (data.tipo as string) || "",
     status: normalizeFrotaStatus(data.status),
     justificativaManutencao: (data.justificativaManutencao as string) || "",
-    createdAt: (data.createdAt as any) || null,
+    createdAt: data.createdAt as Timestamp || null,
     createdBy: (data.createdBy as string) || "",
-    updatedAt: (data.updatedAt as any) || null,
+    updatedAt: data.updatedAt as Timestamp || null,
     updatedBy: (data.updatedBy as string) || "",
   };
 }
@@ -67,8 +67,8 @@ export function normalizeFrota(id: string, data: Record<string, unknown>): Frota
 export function normalizeReserva(id: string, data: Record<string, unknown>): Reserva {
   return {
     id,
-    tipoOperacao: (data.tipoOperacao as any) || "SOLICITACAO",
-    status: (data.status as any) || "Pendente",
+    tipoOperacao: (data.tipoOperacao as Reserva["tipoOperacao"]) || "SOLICITACAO",
+    status: (data.status as AgendaStatus) || "Pendente",
     solicitanteId: (data.solicitanteId as string) || null,
     solicitanteNome: (data.solicitanteNome as string) || "",
     solicitante: (data.solicitante as string) || (data.solicitanteNome as string) || "",
@@ -87,11 +87,11 @@ export function normalizeReserva(id: string, data: Record<string, unknown>): Res
     frenteTrabalho: (data.frenteTrabalho as string) || "",
     motoristaId: (data.motoristaId as string) || null,
     motoristaNome: (data.motoristaNome as string) || "",
-    horarioInicioReal: (data.horarioInicioReal as any) || null,
-    horarioFimReal: (data.horarioFimReal as any) || null,
+    horarioInicioReal: data.horarioInicioReal as Timestamp || null,
+    horarioFimReal: data.horarioFimReal as Timestamp || null,
     observacao: (data.observacao as string) || "",
     motivoRecusa: (data.motivoRecusa as string) || "",
-    createdAt: (data.createdAt as any) || null,
+    createdAt: data.createdAt as Timestamp || null,
     relatorio: (data.relatorio as string) || null,
   };
 }
@@ -105,13 +105,13 @@ export function normalizeUserProfile(id: string, data: Record<string, unknown>):
     name: (data.name as string) || (data.displayName as string) || "",
     nickname: (data.nickname as string) || "",
     email: (data.email as string) || "",
-    emailTipo: (data.emailTipo as any) || "REAL",
+    emailTipo: (data.emailTipo as UserProfile["emailTipo"]) || "REAL",
     role: normalizeUserRole(data.role),
     permissions: Array.isArray(data.permissions) ? data.permissions : [],
-    status: (data.status as any) || "ATIVO",
-    criadoEm: (data.criadoEm as any) || (data.createdAt as any) || null,
-    atualizadoEm: (data.atualizadoEm as any) || (data.updatedAt as any) || null,
-    ultimoAcesso: (data.ultimoAcesso as any) || null,
+    status: (data.status as UserProfile["status"]) || "ATIVO",
+    criadoEm: (data.criadoEm || data.createdAt) as Timestamp,
+    atualizadoEm: (data.atualizadoEm || data.updatedAt) as Timestamp,
+    ultimoAcesso: data.ultimoAcesso as Timestamp || null,
   };
 }
 
@@ -124,7 +124,7 @@ export function normalizeEquipamento(id: string, data: Record<string, unknown>):
     nome: (data.nome as string) || "",
     codigo: (data.codigo as string) || "",
     tipo: (data.tipo as string) || "",
-    status: (data.status as any) || "DISPONÍVEL",
+    status: (data.status as Equipamento["status"]) || "DISPONÍVEL",
     frenteId: (data.frenteId as string) || "",
   };
 }
@@ -138,6 +138,6 @@ export function normalizeFrente(id: string, data: Record<string, unknown>): Fren
     nome: (data.nome as string) || "",
     codigo: (data.codigo as string) || "",
     responsavel: (data.responsavel as string) || "",
-    status: (data.status as any) || "ATIVA",
+    status: (data.status as Frente["status"]) || "ATIVA",
   };
 }
