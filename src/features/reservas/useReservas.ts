@@ -42,7 +42,7 @@ export function useReservas() {
 
       // Obter dados anteriores de forma estável (evita depender da variável reservas do hook que muda a cada render)
       const prevData = persistence.get<Reserva[]>("agenda_full") || [];
-      
+
       // Notificar mudanças apenas se houver dados novos reais
       if (prevData.length > 0) {
         data.forEach((curr) => {
@@ -54,7 +54,7 @@ export function useReservas() {
             if (isSolicitante || isRelevantAdmin) {
               sendNotification(
                 "Atualização de Reserva",
-                `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`
+                `A reserva [${curr.id.substring(0, 5)}] mudou para: ${curr.status}`,
               );
             }
           }
