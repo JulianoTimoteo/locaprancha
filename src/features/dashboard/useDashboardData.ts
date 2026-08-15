@@ -25,27 +25,33 @@ export function useDashboardData() {
 
     // Conectar em paralelo
     unsubFrotas = subscribeToFrotas((data) => {
-      const prev = persistence.get<Frota[]>("frotas") || [];
-      if (JSON.stringify(data) !== JSON.stringify(prev)) {
-        setPranchas(data);
-        persistence.save("frotas", data);
-      }
+      setPranchas((prev) => {
+        if (JSON.stringify(data) !== JSON.stringify(prev)) {
+          persistence.save("frotas", data);
+          return data;
+        }
+        return prev;
+      });
     });
 
     unsubAgenda = subscribeToAgenda((data) => {
-      const prev = persistence.get<Reserva[]>("agenda") || [];
-      if (JSON.stringify(data) !== JSON.stringify(prev)) {
-        setAgenda(data);
-        persistence.save("agenda", data);
-      }
+      setAgenda((prev) => {
+        if (JSON.stringify(data) !== JSON.stringify(prev)) {
+          persistence.save("agenda", data);
+          return data;
+        }
+        return prev;
+      });
     });
 
     unsubLogs = subscribeToAuditLogs((data) => {
-      const prev = persistence.get<AuditLog[]>("audit_logs") || [];
-      if (JSON.stringify(data) !== JSON.stringify(prev)) {
-        setLogs(data);
-        persistence.save("audit_logs", data);
-      }
+      setLogs((prev) => {
+        if (JSON.stringify(data) !== JSON.stringify(prev)) {
+          persistence.save("audit_logs", data);
+          return data;
+        }
+        return prev;
+      });
       setLoading(false);
     });
 
