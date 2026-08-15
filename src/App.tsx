@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense, useEffect } from "react";
+import React, { useState, lazy, Suspense, useEffect, useCallback } from "react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { Layout } from "@/components/layout/Layout";
@@ -55,17 +55,16 @@ export default function App() {
     return "dashboard";
   });
 
-  const handleNavigate = (view: string) => {
-    if (view === currentView) return; // Evitar navegação duplicada/loops
+  const handleNavigate = useCallback((view: string) => {
+    if (view === currentView) return;
 
     setCurrentView(view);
     localStorage.setItem("locaprancha_view", view);
 
-    // Atualizar URL sem refresh (importante para GitHub Pages SPA)
     const url = new URL(window.location.href);
     url.searchParams.set("view", view);
     window.history.pushState({ view }, "", url.toString());
-  };
+  }, [currentView]);
 
   useEffect(() => {
     const handleNav = (e: any) => {
