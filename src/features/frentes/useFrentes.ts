@@ -21,14 +21,22 @@ export function useFrentes() {
 
   useEffect(() => {
     const q = query(collection(db, "frentes"), orderBy("nome"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Frente[];
-      setFrentes(data);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Frente[];
+        setFrentes(data);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Erro ao carregar frentes:", error);
+        setLoading(false);
+        toast.error("Erro ao carregar frentes. Verifique sua conexão.");
+      },
+    );
     return () => unsubscribe();
   }, []);
 

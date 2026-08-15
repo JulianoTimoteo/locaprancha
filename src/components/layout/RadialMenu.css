@@ -1,7 +1,7 @@
 .menu-radial-container {
   --toggle-size: 40px;
   --item-size: 54px;
-  --radius: min(165px, 35vw);
+  --radius: min(150px, 32vw);
   --bg-gradient: transparent;
   --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
@@ -12,6 +12,7 @@
   justify-content: center;
   align-items: center;
   z-index: 70;
+  overflow: visible;
 }
 
 .radial-toggle-btn {

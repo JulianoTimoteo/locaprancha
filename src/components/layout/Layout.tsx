@@ -205,7 +205,7 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
               onClick={() => onNavigate("perfil")}
             />
 
-            <div className="relative z-50 flex flex-col items-center justify-center w-16">
+            <div className="relative z-50 flex flex-col items-center justify-center w-16 overflow-visible">
               <div className="flex items-center justify-center h-14 w-16">
                 <RadialMenu
                   items={[
