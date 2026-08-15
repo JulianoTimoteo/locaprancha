@@ -55,19 +55,16 @@ export default function App() {
     return "dashboard";
   });
 
-  const handleNavigate = useCallback(
-    (view: string) => {
-      if (view === currentView) return;
-
-      setCurrentView(view);
+  const handleNavigate = useCallback((view: string) => {
+    setCurrentView((prev) => {
+      if (prev === view) return prev;
       localStorage.setItem("locaprancha_view", view);
-
       const url = new URL(window.location.href);
       url.searchParams.set("view", view);
       window.history.pushState({ view }, "", url.toString());
-    },
-    [currentView],
-  );
+      return view;
+    });
+  }, []);
 
   useEffect(() => {
     const handleNav = (e: any) => {
@@ -93,19 +90,18 @@ export default function App() {
       window.removeEventListener("navigate", handleNav);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [currentView]); // Dependência adicionada
+  }, [handleNavigate]);
 
   useEffect(() => {
     if (user && profile && currentView === "dashboard") {
       const params = new URLSearchParams(window.location.search);
       if (!params.get("view")) {
-        // Usar a URL diretamente em vez de pushState se possível para evitar triggers circulares
         const url = new URL(window.location.href);
         url.searchParams.set("view", "dashboard");
         window.history.replaceState({ view: "dashboard" }, "", url.toString());
       }
     }
-  }, [user?.uid, !!profile]);
+  }, [user, profile, currentView]);
 
   if (loading && !profile) {
     return (
@@ -117,7 +113,7 @@ export default function App() {
           <span className="text-[#40800c] text-3xl font-black">PRANCHA</span>
         </div>
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest animate-pulse mt-4">
-          Sincronizando ambiente seguro (v1.7.3)...
+          Sincronizando ambiente seguro (v1.7.5)...
         </p>
         <div className="mt-8 opacity-0 hover:opacity-100 transition-opacity">
           <Button
