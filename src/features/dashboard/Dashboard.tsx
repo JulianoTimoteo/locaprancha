@@ -65,7 +65,7 @@ export function Dashboard() {
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <p className="text-red-500 font-medium">⚠️ {error}</p>
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent("navigate", { detail: "dashboard" }))}
+          onClick={() => window.location.reload()}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-bold"
         >
           Tentar novamente
@@ -91,18 +91,21 @@ export function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <h1
-        className="text-xl sm:text-2xl font-black tracking-tight uppercase flex items-center gap-2 mb-2"
-        id="dashboard-title"
-      >
-        Dashboard Operacional
-      </h1>
-      <p className="sr-only" aria-labelledby="dashboard-title">
-        Locaprancha - Usina Pitangueiras
-      </p>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col gap-1">
+        <h1
+          className="text-2xl sm:text-3xl font-black tracking-tight uppercase text-foreground/90"
+          id="dashboard-title"
+        >
+          Dashboard Operacional
+        </h1>
+        <p className="text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
+          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          Usina Pitangueiras • Monitoramento em tempo real
+        </p>
+      </div>
 
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Frota Total"
           value={stats.total}
@@ -138,22 +141,26 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-        <Card className="lg:col-span-7 shadow-sm border-primary/5">
-          <CardHeader>
+        <Card className="lg:col-span-7 border-none shadow-xl bg-card/40 backdrop-blur-md relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold flex items-center gap-2" tag="h2">
-                <Calendar className="w-5 h-5 text-primary" />
-                PRÓXIMOS TRANSPORTES
-              </CardTitle>
+              <div className="space-y-1">
+                <CardTitle className="text-xl font-black flex items-center gap-2 uppercase tracking-tight" tag="h2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Próximos Transportes
+                </CardTitle>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Agenda Operacional Prioritária</p>
+              </div>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="text-primary font-bold text-xs hover:bg-primary/5"
+                className="text-primary font-black text-[10px] uppercase border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300"
                 onClick={() =>
                   window.dispatchEvent(new CustomEvent("navigate", { detail: "reservas" }))
                 }
               >
-                ABRIR AGENDA →
+                Ver Agenda Completa →
               </Button>
             </div>
           </CardHeader>
@@ -168,7 +175,7 @@ export function Dashboard() {
                 reservas.map((reserva) => (
                   <div
                     key={reserva.id}
-                    className="flex flex-col p-3 rounded-lg border border-primary/5 bg-muted/5 hover:bg-muted/10 transition-colors gap-3 cursor-pointer"
+                    className="flex flex-col p-4 rounded-xl border border-primary/5 bg-card hover:bg-accent/50 hover:border-primary/20 transition-all duration-300 gap-4 shadow-sm group cursor-pointer active:scale-[0.98]"
                     onClick={() =>
                       window.dispatchEvent(new CustomEvent("navigate", { detail: "reservas" }))
                     }
@@ -273,16 +280,18 @@ function StatCard({
   titleTag?: "p" | "h2" | "h3";
 }) {
   return (
-    <Card className="overflow-hidden" aria-label={ariaLabel}>
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex items-center justify-between space-y-0 pb-2">
-          <TitleTag className="text-xs sm:text-sm font-bold text-muted-foreground uppercase tracking-wider">
+    <Card className="overflow-hidden border-none shadow-lg bg-card/60 backdrop-blur-sm" aria-label={ariaLabel}>
+      <CardContent className="p-5 sm:p-6">
+        <div className="flex items-center justify-between space-y-0 pb-3">
+          <TitleTag className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-[0.15em]">
             {label}
           </TitleTag>
-          <span className="text-lg">{icon}</span>
+          <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center shadow-sm">
+            <span className="text-base">{icon}</span>
+          </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className={cn("text-2xl sm:text-3xl font-black", color)}>{value}</span>
+          <span className={cn("text-3xl sm:text-4xl font-black tracking-tighter", color)}>{value}</span>
         </div>
       </CardContent>
     </Card>
