@@ -81,119 +81,107 @@
           margin-bottom: 20px;
         "
       ></div>
-      <h2 style="font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: -1px; color: #1e293b">
+      <h2 style="font-weight: 900; text-transform: uppercase; margin: 0; letter-spacing: -1px">
         Locaprancha
       </h2>
       <p
         style="
-          font-size: 10px;
-          color: #64748b;
-          margin-top: 8px;
-          font-weight: 800;
+          font-size: 12px;
+          color: #666;
+          margin-top: 10px;
+          font-weight: bold;
           text-transform: uppercase;
-          letter-spacing: 2px;
+          letter-spacing: 1px;
         "
       >
-        Sincronizando ambiente...
+        Sincronizando ambiente seguro...
       </p>
 
-      <div id="error-diagnosis" style="display: none; margin-top: 30px; max-width: 320px; animation: fadeIn 0.5s ease-out">
-        <div style="background: #fef2f2; border: 1px solid #fee2e2; padding: 16px; border-radius: 12px; margin-bottom: 20px">
-          <p style="font-size: 12px; color: #991b1b; font-weight: 700; margin-bottom: 4px; text-transform: uppercase">
-            ⚠️ Falha na Inicialização
-          </p>
-          <p style="font-size: 11px; color: #b91c1c; line-height: 1.5; margin: 0">
-            Ocorreu um erro ao carregar o aplicativo. Isso pode ser causado por cache antigo ou instabilidade na conexão.
-          </p>
-        </div>
-        
-        <button 
-          id="manual-reset-btn"
-          onclick="performHardReset()"
+      <div id="error-diagnosis" style="display: none; margin-top: 20px; max-width: 300px">
+        <p style="font-size: 11px; color: #ef4444; margin-bottom: 15px; line-height: 1.4">
+          O sistema detectou uma falha na inicialização do React. Isso geralmente ocorre devido a
+          cache corrompido ou incompatibilidade de versão.
+        </p>
+        <button
+          id="reset-storage-html"
           style="
-            background: #1e293b;
+            width: 100%;
+            padding: 14px 20px;
+            background: #ef4444;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 11px;
+            border-radius: 12px;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 1px;
             cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s;
-            width: 100%;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+            transition: transform 0.2s ease;
           "
         >
-          Limpar Cache e Tentar Novamente
+          LIMPAR CACHE E REINICIAR
         </button>
       </div>
 
       <style>
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #manual-reset-btn:hover { background: #0f172a; transform: translateY(-1px); }
-        #manual-reset-btn:active { transform: translateY(0); }
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        #reset-storage-html:active {
+          transform: scale(0.95);
+        }
       </style>
       <script>
-        // Versão v1.8.1 - Automatic Hard Recovery (No UI required)
+        // Versão v1.7.0 - Anti-White-Screen Guard Reinforced (Auto-Recovery)
         let autoRetryCount = parseInt(localStorage.getItem("locaprancha_auto_retry") || "0");
-        let appMounted = false;
+        
+        setTimeout(() => {
+          const root = document.getElementById("root");
+          const isEmpty = !root || root.innerHTML.trim() === "";
 
-        const performHardReset = () => {
-          console.warn("[RECOVERY] Executando Hard Reset Automático...");
+          if (isEmpty) {
+            console.error("[ANTI-WHITE-SCREEN] Falha crítica de montagem detectada.");
+            
+            if (autoRetryCount < 1) {
+              localStorage.setItem("locaprancha_auto_retry", (autoRetryCount + 1).toString());
+              console.warn("[ANTI-WHITE-SCREEN] Tentando recuperação automática...");
+              localStorage.clear();
+              sessionStorage.clear();
+              if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.getRegistrations().then((registrations) => {
+                  for (let registration of registrations) registration.unregister();
+                });
+              }
+              window.location.href = window.location.origin + window.location.pathname + "?auto-reset=" + Date.now();
+            } else {
+              const diagnosis = document.getElementById("error-diagnosis");
+              if (diagnosis) diagnosis.style.display = "block";
+            }
+          } else {
+            const loader = document.getElementById("emergency-loader");
+            if (loader && !isEmpty) {
+              loader.style.display = "none";
+              localStorage.removeItem("locaprancha_auto_retry");
+            }
+          }
+        }, 3000);
+
+        document.getElementById("reset-storage-html")?.addEventListener("click", () => {
+          console.warn("[ANTI-WHITE-SCREEN] Executando Hard Reset Manual via HTML...");
           localStorage.clear();
           sessionStorage.clear();
-          
+          localStorage.removeItem("locaprancha_auto_retry");
           if ("serviceWorker" in navigator) {
             navigator.serviceWorker.getRegistrations().then((registrations) => {
               for (let registration of registrations) registration.unregister();
             });
           }
-
-          if ("caches" in window) {
-            caches.keys().then((names) => {
-              for (let name of names) caches.delete(name);
-            });
-          }
-
-          const nextRetry = autoRetryCount + 1;
-          localStorage.setItem("locaprancha_auto_retry", nextRetry.toString());
-          
-          window.location.href = window.location.origin + window.location.pathname + "?reset=" + Date.now();
-        };
-
-        const checkMount = () => {
-          const root = document.getElementById("root");
-          const isEmpty = !root || root.innerHTML.trim() === "";
-          if (!isEmpty) {
-            appMounted = true;
-            const loader = document.getElementById("emergency-loader");
-            if (loader) loader.style.display = "none";
-            localStorage.removeItem("locaprancha_auto_retry");
-            return true;
-          }
-          return false;
-        };
-
-        const mountInterval = setInterval(() => {
-          if (checkMount()) clearInterval(mountInterval);
-        }, 500);
-
-        setTimeout(() => {
-          clearInterval(mountInterval);
-          if (!appMounted) {
-            if (autoRetryCount < 3) {
-              performHardReset();
-            } else {
-              const diag = document.getElementById("error-diagnosis");
-              if (diag) diag.style.display = "block";
-              // Tentar um último reset após 5 segundos se nada mudar
-              setTimeout(performHardReset, 5000);
-            }
-          }
-        }, 6000);
+          fetch(window.location.href, { cache: "reload", mode: "no-cors" }).finally(() => {
+            window.location.href =
+              window.location.origin + window.location.pathname + "?reset=" + Date.now();
+          });
+        });
       </script>
     </div>
 
