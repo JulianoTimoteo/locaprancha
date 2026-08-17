@@ -70,7 +70,7 @@
 }
 
 .is-open .radial-item {
-  --arc-size: 110deg;
+  --arc-size: 90deg;
   --start-angle: -180deg;
   --step: calc(var(--arc-size) / (var(--total) - 1));
   --angle: calc(var(--start-angle) + (var(--step) * var(--i)));
@@ -94,7 +94,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 
-  --arc-size: 110deg;
+  --arc-size: 90deg;
   --start-angle: -180deg;
   --step: calc(var(--arc-size) / (var(--total) - 1));
   --angle-neg: calc(-1 * (var(--start-angle) + (var(--step) * var(--i))));
