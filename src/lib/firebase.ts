@@ -12,6 +12,8 @@ const firebaseConfig = {
   measurementId: import.meta.env["VITE_FIREBASE_MEASUREMENT_ID"],
 };
 
+console.log("[FIREBASE] apiKey usada:", firebaseConfig.apiKey);
+
 const app = initializeApp(firebaseConfig);
 const secondaryApp = initializeApp(firebaseConfig, "SecondaryAuth");
 
