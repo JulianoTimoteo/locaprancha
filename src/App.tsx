@@ -33,6 +33,9 @@ const EquipamentoList = lazy(() =>
 const RelatorioPage = lazy(() =>
   import("@/features/relatorios/RelatorioPage").then((m) => ({ default: m.RelatorioPage })),
 );
+const PerfilPage = lazy(() =>
+  import("@/features/perfil/PerfilPage").then((m) => ({ default: m.PerfilPage })),
+);
 
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -246,9 +249,14 @@ export default function App() {
                 <UsuarioList />
               </ErrorBoundary>
             )}
+            {currentView === "perfil" && (
+              <ErrorBoundary area="Perfil">
+                <PerfilPage />
+              </ErrorBoundary>
+            )}
           </Suspense>
 
-          {!canAccessTab(profile, currentView) && (
+          {currentView !== "perfil" && !canAccessTab(profile, currentView) && (
             <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
               <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center">
                 <AlertCircle size={32} />
