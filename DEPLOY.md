@@ -28,9 +28,11 @@ Para que o GitHub Actions consiga realizar o build com as chaves corretas, você
 
 O arquivo `.github/workflows/deploy.yml` gerencia o fluxo automático:
 
-- **Trigger**: Push na branch `main` ou execução manual.
-- **Node Version**: 22.
-- **Processo**: `npm ci` -> `npm run build` -> `validate dist` -> `deploy`.
+- **Trigger**: Push na branch `main` ou execução manual (`workflow_dispatch`).
+- **Node Version**: 20.
+- **Processo**: `npm ci` -> `npm run build` -> `cp dist/index.html dist/404.html` -> `actions/configure-pages` -> `actions/upload-pages-artifact` -> `actions/deploy-pages` (método oficial "GitHub Actions").
+
+> **Importante**: a fonte do Pages deve estar em **GitHub Actions** (Settings > Pages > Build and deployment > Source). Se estiver em "Deploy from a branch", o GitHub publica o código-fonte em vez do build da aplicação.
 
 ## 5. Verificação Pós-Deploy
 
