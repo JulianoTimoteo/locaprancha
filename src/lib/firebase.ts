@@ -3,13 +3,14 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: import.meta.env["VITE_FIREBASE_API_KEY"],
-  authDomain: import.meta.env["VITE_FIREBASE_AUTH_DOMAIN"],
-  projectId: import.meta.env["VITE_FIREBASE_PROJECT_ID"],
-  storageBucket: import.meta.env["VITE_FIREBASE_STORAGE_BUCKET"],
-  messagingSenderId: import.meta.env["VITE_FIREBASE_MESSAGING_SENDER_ID"],
-  appId: import.meta.env["VITE_FIREBASE_APP_ID"],
-  measurementId: import.meta.env["VITE_FIREBASE_MEASUREMENT_ID"],
+  apiKey: import.meta.env["VITE_FIREBASE_API_KEY"] || "AIzaSyACmJ-iD2Kr-6z8X0eu15LEZArmQNzRZ5A",
+  authDomain: import.meta.env["VITE_FIREBASE_AUTH_DOMAIN"] || "locaprancha.firebaseapp.com",
+  projectId: import.meta.env["VITE_FIREBASE_PROJECT_ID"] || "locaprancha",
+  storageBucket:
+    import.meta.env["VITE_FIREBASE_STORAGE_BUCKET"] || "locaprancha.firebasestorage.app",
+  messagingSenderId: import.meta.env["VITE_FIREBASE_MESSAGING_SENDER_ID"] || "779406680946",
+  appId: import.meta.env["VITE_FIREBASE_APP_ID"] || "1:779406680946:web:f8a3286f6da76d7ab473eb",
+  measurementId: import.meta.env["VITE_FIREBASE_MEASUREMENT_ID"] || "G-491BHV18M6",
 };
 
 const app = initializeApp(firebaseConfig);

@@ -26,6 +26,13 @@ if (rootElement) {
     </React.StrictMode>,
   );
 
+  // Limpar contador de auto-retry em caso de inicialização bem-sucedida
+  try {
+    localStorage.removeItem("locaprancha_auto_retry");
+  } catch (e) {
+    // Ignore storage errors in restricted contexts
+  }
+
   // Ocultar loader de emergência após renderização bem-sucedida
   const loader = document.getElementById("emergency-loader");
   if (loader) {

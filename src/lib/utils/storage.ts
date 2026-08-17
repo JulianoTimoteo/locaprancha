@@ -20,18 +20,11 @@ export const initAppPersistence = () => {
         `[Storage] Version mismatch: ${lastVersion} -> ${VERSION}. Executing Hard Reset...`,
       );
 
-      // Preservar apenas o que for estritamente necessário se quiséssemos,
-      // mas para "Tela Branca" a regra é: LIMPEZA TOTAL.
       localStorage.clear();
       sessionStorage.clear();
 
       localStorage.setItem("locaprancha_app_version", VERSION);
       console.info("[Storage] Hard Reset complete. App is clean.");
-
-      // Forçar recarregamento para garantir que o estado do React seja reiniciado do zero
-      if (lastVersion !== null) {
-        window.location.reload();
-      }
     }
   } catch (error) {
     console.error("[Storage] Failed to initialize persistence:", error);

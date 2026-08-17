@@ -97,11 +97,26 @@
         Sincronizando ambiente seguro...
       </p>
 
-      <div id="error-diagnosis" style="display: none; margin-top: 20px; max-width: 300px">
-        <p style="font-size: 11px; color: #ef4444; margin-bottom: 15px; line-height: 1.4">
+      <div id="error-diagnosis" style="display: none; margin-top: 20px; max-width: 340px">
+        <p style="font-size: 11px; color: #ef4444; margin-bottom: 10px; line-height: 1.4">
           O sistema detectou uma falha na inicialização do React. Isso geralmente ocorre devido a
           cache corrompido ou incompatibilidade de versão.
         </p>
+        <p
+          id="error-message"
+          style="
+            font-size: 10px;
+            font-family: monospace;
+            color: #b91c1c;
+            margin-bottom: 15px;
+            display: none;
+            word-break: break-all;
+            text-align: left;
+            background: #fee2e2;
+            padding: 8px;
+            border-radius: 6px;
+          "
+        ></p>
         <button
           id="reset-storage-html"
           style="
@@ -133,7 +148,18 @@
         }
       </style>
       <script>
-        // Versão v1.7.0 - Anti-White-Screen Guard Reinforced (Auto-Recovery)
+        // Versão v1.7.1 - Anti-White-Screen Guard (Auto-Recovery & Loop Prevention)
+        window.addEventListener("error", function (e) {
+          console.error("[ANTI-WHITE-SCREEN Error Captured]", e.error || e.message);
+          const diagnosis = document.getElementById("error-diagnosis");
+          const errorMsg = document.getElementById("error-message");
+          if (errorMsg && (e.message || e.error)) {
+            errorMsg.innerText = "Erro técnico: " + (e.message || String(e.error));
+            errorMsg.style.display = "block";
+          }
+          if (diagnosis) diagnosis.style.display = "block";
+        });
+
         let autoRetryCount = parseInt(localStorage.getItem("locaprancha_auto_retry") || "0");
         
         setTimeout(() => {
@@ -144,10 +170,12 @@
             console.error("[ANTI-WHITE-SCREEN] Falha crítica de montagem detectada.");
             
             if (autoRetryCount < 1) {
-              localStorage.setItem("locaprancha_auto_retry", (autoRetryCount + 1).toString());
-              console.warn("[ANTI-WHITE-SCREEN] Tentando recuperação automática...");
+              console.warn("[ANTI-WHITE-SCREEN] Executando recuperação automática...");
               localStorage.clear();
               sessionStorage.clear();
+              // Gravar contador APÓS o clear para não perder no reload
+              localStorage.setItem("locaprancha_auto_retry", (autoRetryCount + 1).toString());
+
               if ("serviceWorker" in navigator) {
                 navigator.serviceWorker.getRegistrations().then((registrations) => {
                   for (let registration of registrations) registration.unregister();
@@ -165,22 +193,20 @@
               localStorage.removeItem("locaprancha_auto_retry");
             }
           }
-        }, 3000);
+        }, 8000);
 
         document.getElementById("reset-storage-html")?.addEventListener("click", () => {
           console.warn("[ANTI-WHITE-SCREEN] Executando Hard Reset Manual via HTML...");
           localStorage.clear();
           sessionStorage.clear();
-          localStorage.removeItem("locaprancha_auto_retry");
+          localStorage.setItem("locaprancha_auto_retry", "0");
           if ("serviceWorker" in navigator) {
             navigator.serviceWorker.getRegistrations().then((registrations) => {
               for (let registration of registrations) registration.unregister();
             });
           }
-          fetch(window.location.href, { cache: "reload", mode: "no-cors" }).finally(() => {
-            window.location.href =
-              window.location.origin + window.location.pathname + "?reset=" + Date.now();
-          });
+          window.location.href =
+            window.location.origin + window.location.pathname + "?reset=" + Date.now();
         });
       </script>
     </div>
