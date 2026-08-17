@@ -341,6 +341,7 @@ export function ReservaForm({
                     frenteId: val,
                     frenteTrabalho: frente?.nome || val,
                     equipamentoManual: "",
+                    equipamentoId: "",
                   });
                 }}
               >
@@ -364,8 +365,12 @@ export function ReservaForm({
             <Textarea
               value={formData.observacao}
               onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
-              placeholder="Informações adicionais..."
-              required
+              placeholder={
+                formData.frenteId === "OUTROS"
+                  ? "Obrigatório: descreva o equipamento/motivo (fora da frota cadastrada)"
+                  : "Informações adicionais..."
+              }
+              required={formData.frenteId === "OUTROS"}
             />
           </div>
 
