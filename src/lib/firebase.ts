@@ -10,7 +10,6 @@ const firebaseConfig = {
     import.meta.env["VITE_FIREBASE_STORAGE_BUCKET"] || "locaprancha.firebasestorage.app",
   messagingSenderId: import.meta.env["VITE_FIREBASE_MESSAGING_SENDER_ID"] || "779406680946",
   appId: import.meta.env["VITE_FIREBASE_APP_ID"] || "1:779406680946:web:f8a3286f6da76d7ab473eb",
-  measurementId: import.meta.env["VITE_FIREBASE_MEASUREMENT_ID"] || "G-491BHV18M6",
 };
 
 const app = initializeApp(firebaseConfig);

@@ -63,18 +63,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let unsubscribeProfile: (() => void) | undefined;
 
-    // TIMEOUT DE SEGURANÇA: Se o Firebase Auth não responder em 10s,
-    // forçamos o fim do loading para evitar loop infinito.
+    // TIMEOUT DE SEGURANÇA: Se o Firebase Auth não responder em 2s (ex: adblocker / cross-origin),
+    // forçamos o fim do loading para exibir a tela de login rapidamente.
     const safetyTimeout = setTimeout(() => {
-      if (authLoading) {
-        console.warn("[AUTH] Timeout de segurança atingido (10s). Forçando fim do loading.");
-        setAuthLoading(false);
-        setProfileLoading(false);
-        if (!user) {
-          setStatus("AUTH_NOT_FOUND");
-        }
-      }
-    }, 10_000);
+      console.warn("[AUTH] Timeout de segurança atingido (2s). Forçando fim do loading.");
+      setAuthLoading(false);
+      setProfileLoading(false);
+      setStatus((prev) => (prev === "LOADING" ? "AUTH_NOT_FOUND" : prev));
+    }, 2_000);
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user: User | null) => {
       clearTimeout(safetyTimeout);
@@ -94,14 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // O documento deve ter como ID o Firebase Auth UID.
         const userDocRef = doc(db, "usuarios", user.uid);
 
-        // Timeout para carregamento do perfil (15s)
+        // Timeout para carregamento do perfil (4s)
         const profileTimeout = setTimeout(() => {
-          console.warn("[AUTH] Timeout ao carregar perfil do Firestore (15s).");
+          console.warn("[AUTH] Timeout ao carregar perfil do Firestore (4s).");
           setProfileLoading(false);
-          if (!profile) {
-            setStatus("PROFILE_NOT_FOUND");
-          }
-        }, 15_000);
+          setStatus((prev) => (prev === "LOADING" ? "PROFILE_NOT_FOUND" : prev));
+        }, 4_000);
 
         unsubscribeProfile = onSnapshot(
           userDocRef,
