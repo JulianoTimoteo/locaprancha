@@ -102,6 +102,25 @@
           to { transform: rotate(360deg); }
         }
       </style>
+      <script>
+        // Automatic cleanup: Guarantee loader is hidden after 1.5s max
+        setTimeout(function() {
+          var loader = document.getElementById("emergency-loader");
+          if (loader) {
+            loader.style.opacity = "0";
+            setTimeout(function() { if (loader && loader.parentNode) loader.remove(); }, 300);
+          }
+        }, 1500);
+
+        // Unregister any stale ServiceWorkers from previous PWA builds
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function (registrations) {
+            for (var i = 0; i < registrations.length; i++) {
+              registrations[i].unregister();
+            }
+          });
+        }
+      </script>
     </div>
 
     <script type="module" src="./src/main.tsx"></script>
