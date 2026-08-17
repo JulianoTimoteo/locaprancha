@@ -54,20 +54,33 @@ export class ErrorBoundary extends Component<Props, State> {
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto font-medium">
               Ocorreu uma falha na renderização ou no processamento de dados.
-              {import.meta.env.DEV && this.state.error && (
-                <span className="block mt-2 text-xs font-mono bg-muted p-2 rounded text-left overflow-auto max-h-32">
+              {this.state.error && (
+                <span className="block mt-2 text-xs font-mono bg-destructive/10 text-destructive p-3 rounded text-left overflow-auto max-h-32">
                   {this.state.error.message}
                 </span>
               )}
             </p>
           </div>
 
-          <Button
-            onClick={this.handleReset}
-            className="gap-2 font-bold shadow-lg shadow-primary/20"
-          >
-            <RefreshCcw size={18} /> TENTAR NOVAMENTE
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button
+              onClick={this.handleReset}
+              className="gap-2 font-bold shadow-lg shadow-primary/20"
+            >
+              <RefreshCcw size={18} /> TENTAR NOVAMENTE
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+              }}
+              className="gap-2 font-bold"
+            >
+              LIMPAR CACHE E RECARREGAR
+            </Button>
+          </div>
         </div>
       );
     }
