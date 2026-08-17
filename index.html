@@ -146,10 +146,8 @@
             if (autoRetryCount < 1) {
               localStorage.setItem("locaprancha_auto_retry", (autoRetryCount + 1).toString());
               console.warn("[ANTI-WHITE-SCREEN] Tentando recuperação automática...");
-              const preserved = { "locaprancha_auto_retry": localStorage.getItem("locaprancha_auto_retry") };
               localStorage.clear();
               sessionStorage.clear();
-              Object.entries(preserved).forEach(([k, v]) => v && localStorage.setItem(k, v));
               if ("serviceWorker" in navigator) {
                 navigator.serviceWorker.getRegistrations().then((registrations) => {
                   for (let registration of registrations) registration.unregister();

@@ -97,7 +97,7 @@ export default function App() {
     window.history.pushState({ view }, "", url.toString());
   };
 
-  if (loading && !profile) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-background">
         <ConnectionBanner />

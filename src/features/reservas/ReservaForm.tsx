@@ -64,6 +64,22 @@ export function ReservaForm({
     motivoRecusa: "",
   });
 
+  // Detecta "OUTROS" pelo NOME da frente selecionada (não pelo ID), pois pode
+  // existir uma frente "OUTROS" já cadastrada no Firestore com um ID próprio,
+  // diferente da string literal "OUTROS".
+  const isOutros = React.useMemo(() => {
+    if (formData.frenteId === "OUTROS") return true;
+    const frenteSelecionada = frentes.find((f) => f.id === formData.frenteId);
+    return frenteSelecionada?.nome?.trim().toUpperCase() === "OUTROS";
+  }, [formData.frenteId, frentes]);
+
+  // Só adiciona o item "OUTROS" manualmente na lista se ainda não existir
+  // uma frente com esse nome cadastrada no banco (evita item duplicado).
+  const temOutrosCadastrado = React.useMemo(
+    () => frentes.some((f) => f.nome?.trim().toUpperCase() === "OUTROS"),
+    [frentes],
+  );
+
   const equipamentosFiltrados = React.useMemo(() => {
     if (!formData.frenteId) return equipamentos;
     const frente = frentes.find((f) => f.id === formData.frenteId);
@@ -106,25 +122,24 @@ export function ReservaForm({
     e.preventDefault();
     if (!formData.pranchaId || !formData.frenteId) return;
 
-    if (formData.frenteId === "OUTROS" && !formData.equipamentoManual.trim()) {
+    if (isOutros && !formData.equipamentoManual.trim()) {
       toast.error("Informe o equipamento/frota.");
       return;
     }
 
-    if (formData.frenteId === "OUTROS" && !formData.observacao.trim()) {
+    if (isOutros && !formData.observacao.trim()) {
       toast.error("Informe as observações.");
       return;
     }
 
     setSubmitting(true);
     try {
-      const equipamentoNome =
-        formData.frenteId === "OUTROS"
-          ? formData.equipamentoManual.trim()
-          : (() => {
-              const eq = equipamentos.find((e) => e.id === formData.equipamentoId);
-              return eq ? `[${eq.codigo}] - ${eq.nome}` : "";
-            })();
+      const equipamentoNome = isOutros
+        ? formData.equipamentoManual.trim()
+        : (() => {
+            const eq = equipamentos.find((e) => e.id === formData.equipamentoId);
+            return eq ? `[${eq.codigo}] - ${eq.nome}` : "";
+          })();
 
       const payload = {
         ...formData,
@@ -275,13 +290,13 @@ export function ReservaForm({
               <label className="text-sm font-bold uppercase text-[10px] text-muted-foreground">
                 Equipamento
               </label>
-              {formData.frenteId === "OUTROS" ? (
+              {isOutros ? (
                 <Input
                   value={formData.equipamentoManual}
                   onChange={(e) => setFormData({ ...formData, equipamentoManual: e.target.value })}
-                  placeholder="Digite a frota/equipamento"
+                  placeholder="Digite a frota/equipamento (texto ou número)"
                   className="font-bold"
-                  required={formData.frenteId === "OUTROS"}
+                  required={isOutros}
                 />
               ) : (
                 <Select
@@ -354,7 +369,7 @@ export function ReservaForm({
                       {f.nome}
                     </SelectItem>
                   ))}
-                  <SelectItem value="OUTROS">OUTROS</SelectItem>
+                  {!temOutrosCadastrado && <SelectItem value="OUTROS">OUTROS</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
@@ -366,11 +381,11 @@ export function ReservaForm({
               value={formData.observacao}
               onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
               placeholder={
-                formData.frenteId === "OUTROS"
+                isOutros
                   ? "Obrigatório: descreva o equipamento/motivo (fora da frota cadastrada)"
                   : "Informações adicionais..."
               }
-              required={formData.frenteId === "OUTROS"}
+              required={isOutros}
             />
           </div>
 

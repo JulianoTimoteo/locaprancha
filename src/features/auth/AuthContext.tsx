@@ -90,8 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfileLoading(true);
         setStatus("LOADING");
 
+        // REGRA ABSOLUTA DE IDENTIDADE (Instrução 1)
+        // O documento deve ter como ID o Firebase Auth UID.
         const userDocRef = doc(db, "usuarios", user.uid);
 
+        // Timeout para carregamento do perfil (15s)
         const profileTimeout = setTimeout(() => {
           console.warn("[AUTH] Timeout ao carregar perfil do Firestore (15s).");
           setProfileLoading(false);
@@ -108,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const profileData = normalizeUserProfile(docSnapshot.id, docSnapshot.data());
               setProfile(profileData);
 
+              // Persistir perfil localmente
               persistence.save("profile", profileData);
 
               if (profileData.status === "BLOQUEADO") {
@@ -120,6 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               setProfileLoading(false);
             } else {
+              // Perfil não encontrado: Não fazemos busca por e-mail aqui.
+              // A busca por e-mail (auto-migração) deve ocorrer apenas no LoginPage.
               console.warn(`[AUTH] Perfil operacional usuarios/${user.uid} não encontrado.`);
               setProfile(null);
               setStatus("PROFILE_NOT_FOUND");
