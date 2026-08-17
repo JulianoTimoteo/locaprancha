@@ -80,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(safetyTimeout);
       setUser(user);
       setAuthLoading(false);
+      console.log("[AUTH] onAuthStateChanged:", { uid: user?.uid, email: user?.email });
 
       if (unsubscribeProfile) {
         unsubscribeProfile();
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         setProfileLoading(true);
         setStatus("LOADING");
+        console.log("[AUTH] Usuário autenticado, carregando perfil...");
 
         // REGRA ABSOLUTA DE IDENTIDADE (Instrução 1)
         // O documento deve ter como ID o Firebase Auth UID.
@@ -110,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (docSnapshot.exists()) {
               const profileData = normalizeUserProfile(docSnapshot.id, docSnapshot.data());
               setProfile(profileData);
+              console.log("[AUTH] Perfil carregado:", profileData);
 
               // Persistir perfil localmente
               persistence.save("profile", profileData);
@@ -140,6 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         );
       } else {
+        console.log("[AUTH] Nenhum usuário autenticado");
         setProfile(null);
         setStatus("AUTH_NOT_FOUND");
         setProfileLoading(false);
