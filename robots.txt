@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hug-and-learn-02.lovable.app/sitemap.xml
