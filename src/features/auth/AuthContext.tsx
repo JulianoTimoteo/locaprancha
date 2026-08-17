@@ -63,14 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let unsubscribeProfile: (() => void) | undefined;
 
-    // TIMEOUT DE SEGURANÇA: Se o Firebase Auth não responder em 2s (ex: adblocker / cross-origin),
-    // forçamos o fim do loading para exibir a tela de login rapidamente.
+    // TIMEOUT DE SEGURANÇA: 500ms max para liberar a renderização da tela de login
     const safetyTimeout = setTimeout(() => {
-      console.warn("[AUTH] Timeout de segurança atingido (2s). Forçando fim do loading.");
+      console.warn("[AUTH] Timeout de segurança atingido (500ms). Exibindo login.");
       setAuthLoading(false);
       setProfileLoading(false);
       setStatus((prev) => (prev === "LOADING" ? "AUTH_NOT_FOUND" : prev));
-    }, 2_000);
+    }, 500);
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user: User | null) => {
       clearTimeout(safetyTimeout);
