@@ -5,35 +5,30 @@
  * não trave em estados corrompidos (ex: rotas inexistentes, sessões expiradas).
  */
 
-const VERSION = "1.6.2";
-export const BUILD_DATE = "14/08/2026 19:07 UTC"; // Data do build fixada para verificação operacional
+const VERSION = "1.7.0";
+export const BUILD_DATE = "17/08/2026 12:30 UTC";
 
 export const initAppPersistence = () => {
   try {
     const lastVersion = localStorage.getItem("locaprancha_app_version");
 
-    // Se a versão mudou ou se for a primeira execução do dia, forçamos um reset leve
-    // No entanto, se o usuário estiver reclamando de tela branca constante,
-    // o reset deve ser agressivo.
     if (lastVersion !== VERSION) {
       console.warn(
-        `[Storage] Version mismatch: ${lastVersion} -> ${VERSION}. Executing Hard Reset...`,
+        `[Storage] Version mismatch: ${lastVersion} -> ${VERSION}. Clearing app cache...`,
       );
 
-      localStorage.clear();
+      // Limpar apenas chaves do app — NÃO usar localStorage.clear() pois apaga
+      // o próprio locaprancha_app_version causando loop infinito de mismatch.
+      const keysToRemove = Object.keys(localStorage).filter((k) => k.startsWith("locaprancha_"));
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
       sessionStorage.clear();
 
+      // Agora grava a nova versão (após a limpeza seletiva)
       localStorage.setItem("locaprancha_app_version", VERSION);
-      console.info("[Storage] Hard Reset complete. App is clean.");
+      console.info("[Storage] Cache limpo. Versão atualizada para", VERSION);
     }
   } catch (error) {
     console.error("[Storage] Failed to initialize persistence:", error);
-    // Em caso de erro no localStorage (ex: modo privado), tentamos limpar o que der
-    try {
-      localStorage.clear();
-    } catch (e) {
-      console.warn("Storage cleanup failed:", e);
-    }
   }
 };
 

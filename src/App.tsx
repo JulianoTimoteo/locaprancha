@@ -40,6 +40,19 @@ export default function App() {
   const { user, profile, loading, status } = useAuth();
   useNotifications(); // Ativar listener de alarmes globalmente para admins
 
+  // Ocultar loader de splash após o primeiro render do React
+  useEffect(() => {
+    const loader = document.getElementById("emergency-loader");
+    if (loader) {
+      loader.style.opacity = "0";
+      loader.style.transition = "opacity 0.3s ease";
+      setTimeout(() => {
+        loader.style.display = "none";
+        loader.remove();
+      }, 350);
+    }
+  }, []);
+
   const [currentView, setCurrentView] = useState(() => {
     // 1. Prioridade: URL (necessário para deep linking no GitHub Pages)
     const params = new URLSearchParams(window.location.search);
