@@ -25,7 +25,7 @@ export function subscribeToAgenda(
   const uid = userProfile?.uid;
   const rawRole = (userProfile?.role || (userProfile as any)?.funcao || "").toString().toUpperCase().trim();
 
-  // Perfis privilegiados com acesso total
+  // Perfis privileged com acesso total
   const isPrivileged =
     rawRole === "GOD" ||
     rawRole === "ADMIN" ||
@@ -102,11 +102,12 @@ export function subscribeToAgenda(
 }
 
 /**
- * Função para aceitar / iniciar o agendamento vinculando a prancha usando o campo 'frota'
+ * Função para aceitar / iniciar o agendamento.
+ * Contém validação para IMPEDIR a aprovação caso a prancha já esteja locada/em uso.
  */
 export async function aceitarEIniciarAgendamento(params: {
   reservaId: string;
-  pranchaId: string; // Ex: "31221" ou "31121"
+  pranchaId: string; // Ex: "31121"
   motoristaUid: string;
   motoristaNome: string;
 }) {
@@ -117,7 +118,24 @@ export async function aceitarEIniciarAgendamento(params: {
     throw new Error("Agendamento e Prancha são obrigatórios para aceitar.");
   }
 
-  // 1. Atualiza o documento na coleção /agenda
+  // 1. Busca os dados atuais da prancha no banco
+  const docPrancha = await findFrotaByFrotaField(valorFrotaLimpo);
+
+  if (!docPrancha) {
+    throw new Error(`A prancha [${valorFrotaLimpo}] não foi encontrada no cadastro.`);
+  }
+
+  const dadosPrancha = docPrancha.data();
+  const statusAtual = (dadosPrancha?.status || "").toString().toUpperCase().trim();
+
+  // 2. Trava de segurança: Impede o aceite se o veículo já estiver em operação/uso
+  if (statusAtual === "EM_USO" || statusAtual === "EM OPERAÇÃO" || statusAtual === "EM OPERACAO") {
+    throw new Error(`A prancha [${valorFrotaLimpo}] já está EM OPERAÇÃO/LOCADA no momento.`);
+  }
+
+  const targetDocId = docPrancha.id;
+
+  // 3. Atualiza a reserva na coleção /agenda
   const reservaRef = doc(db, "agenda", reservaId);
   await updateDoc(reservaRef, {
     pranchaId: valorFrotaLimpo,
@@ -126,16 +144,11 @@ export async function aceitarEIniciarAgendamento(params: {
     numeroPrancha: valorFrotaLimpo,
     motoristaId: motoristaUid,
     motoristaNome: motoristaNome,
-    status: "APROVADO",
+    status: "EM OPERAÇÃO",
     iniciadoEm: new Date().toISOString(),
   });
 
-  // 2. Localiza o documento da prancha no banco pelo valor do campo 'frota'
-  const docPrancha = await findFrotaByFrotaField(valorFrotaLimpo);
-
-  // Se o documento existe, usamos o ID real dele (mesmo que seja Hash); se não existir, usamos o número limpo
-  const targetDocId = docPrancha ? docPrancha.id : valorFrotaLimpo;
-
+  // 4. Atualiza o status da prancha para EM_USO nas coleções /frotas e /frota
   const frotaData = {
     id: targetDocId,
     frota: valorFrotaLimpo,
@@ -145,7 +158,6 @@ export async function aceitarEIniciarAgendamento(params: {
     updatedAt: new Date().toISOString(),
   };
 
-  // 3. Sincroniza a alteração de status em ambas as coleções (/frotas e /frota)
   await setDoc(doc(db, "frotas", targetDocId), frotaData, { merge: true });
   await setDoc(doc(db, "frota", targetDocId), frotaData, { merge: true });
 }
