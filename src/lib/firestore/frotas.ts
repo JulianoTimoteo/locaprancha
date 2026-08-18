@@ -4,6 +4,11 @@ import {
   query,
   where,
   getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
   QueryDocumentSnapshot,
   QuerySnapshot,
   DocumentData,
@@ -13,29 +18,68 @@ import { Frota } from "@/types";
 import { normalizeFrota } from "./normalizers";
 
 /**
- * Achado 2.8 da auditoria: `Reserva.pranchaId` é comparado em diferentes
- * pontos do código contra `frota.frota` OU `frota.numero`, dois nomes para
- * o mesmo conceito coexistindo por causa de uma migração de nomenclatura
- * (Prancha -> Frota) feita pela metade. Isso já causou um bug real: em
- * `addReserva` a consulta usava `where('numero', ...)`, mas o documento é
- * sempre gravado com o campo `frota` (ver `addFrota`/`updateFrota` neste
- * mesmo módulo) — ou seja, aquela consulta nunca encontrava a prancha.
- *
- * Esta função é o único ponto de busca de uma Frota pelo identificador
- * humano (`pranchaId`/`frota.frota`) usado em toda a base. Não crie novas
- * queries `where('frota', ...)` ou `where('numero', ...)` fora daqui.
- *
- * TODO (dívida técnica de médio prazo, ver achado 2.8): migrar `pranchaId`
- * para referenciar o `id` real do documento Firestore em vez de um campo de
- * texto livre, eliminando a necessidade desta busca por query.
+ * Busca uma Frota no Firestore.
+ * Tenta primeiro buscar diretamente pelo ID do documento (ex: /frotas/31220).
+ * Caso não encontre, realiza o fallback buscando pelos campos legados `frota` ou `numero`.
  */
 export async function findFrotaByFrotaField(
   frotaIdentifier: string,
 ): Promise<QueryDocumentSnapshot<DocumentData> | null> {
   if (!frotaIdentifier) return null;
-  const q = query(collection(db, "frotas"), where("frota", "==", frotaIdentifier));
-  const snap = await getDocs(q);
-  return snap.docs[0] ?? null;
+
+  const idLimpo = frotaIdentifier.toString().trim();
+
+  // 1. Tenta buscar direto pelo ID do documento na coleção "frotas" e "frota"
+  const docRefPlural = doc(db, "frotas", idLimpo);
+  const docSnapPlural = await getDoc(docRefPlural);
+
+  if (docSnapPlural.exists()) {
+    return docSnapPlural as QueryDocumentSnapshot<DocumentData>;
+  }
+
+  const docRefSingular = doc(db, "frota", idLimpo);
+  const docSnapSingular = await getDoc(docRefSingular);
+
+  if (docSnapSingular.exists()) {
+    return docSnapSingular as QueryDocumentSnapshot<DocumentData>;
+  }
+
+  // 2. Fallback: Se não encontrou por ID direto, busca pelos campos `frota` ou `numero`
+  const qFrota = query(collection(db, "frotas"), where("frota", "==", idLimpo));
+  const snapFrota = await getDocs(qFrota);
+  if (!snapFrota.empty) return snapFrota.docs[0];
+
+  const qNumero = query(collection(db, "frotas"), where("numero", "==", idLimpo));
+  const snapNumero = await getDocs(qNumero);
+  if (!snapNumero.empty) return snapNumero.docs[0];
+
+  return null;
+}
+
+/**
+ * Cadastra ou atualiza um veículo utilizando o PREFIXO/NÚMERO como chave (ID) do documento.
+ * Isso impede que o Firebase crie um hash aleatório.
+ */
+export async function addOrUpdateFrota(data: Partial<Frota> & { frota: string }): Promise<string> {
+  const frotaId = data.frota.toString().trim();
+  
+  if (!frotaId) {
+    throw new Error("O identificador do veículo (frota/número) é obrigatório.");
+  }
+
+  const frotaData = {
+    ...data,
+    id: frotaId,
+    frota: frotaId,
+    numero: frotaId,
+    atualizadoEm: new Date().toISOString(),
+  };
+
+  // Grava com setDoc forçando a chave limpa em ambas as coleções para evitar bugs de compatibilidade
+  await setDoc(doc(db, "frotas", frotaId), frotaData, { merge: true });
+  await setDoc(doc(db, "frota", frotaId), frotaData, { merge: true });
+
+  return frotaId;
 }
 
 /**
@@ -57,4 +101,13 @@ export function subscribeToFrotas(callback: (frotas: Frota[]) => void) {
       console.error("Erro ao assinar frotas:", error);
     },
   );
+}
+
+/**
+ * Deleta um veículo da frota
+ */
+export async function deleteFrota(frotaId: string): Promise<void> {
+  const idLimpo = frotaId.toString().trim();
+  await deleteDoc(doc(db, "frotas", idLimpo));
+  await deleteDoc(doc(db, "frota", idLimpo));
 }
