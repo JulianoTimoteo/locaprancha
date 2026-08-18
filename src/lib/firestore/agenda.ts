@@ -4,7 +4,6 @@ import {
   query,
   where,
   doc,
-  getDoc,
   setDoc,
   updateDoc,
   QuerySnapshot,
@@ -13,6 +12,7 @@ import {
 import { db } from "../firebase";
 import { Reserva, UserProfile } from "@/types";
 import { normalizeAgendaRecord } from "./agendaNormalizer";
+import { findFrotaByFrotaField } from "./frotas";
 
 /**
  * Escuta as atualizações da agenda em tempo real.
@@ -35,7 +35,6 @@ export function subscribeToAgenda(
     rawRole === "PRANCHA";
 
   if (isPrivileged || !uid) {
-    // Se for privilegiado, busca toda a agenda. Se não houver UID, lê coleção vazia/geral com fallback.
     const q = query(collection(db, "agenda"));
     return onSnapshot(
       q,
@@ -103,44 +102,50 @@ export function subscribeToAgenda(
 }
 
 /**
- * Função para aceitar / iniciar o agendamento vinculando a prancha de forma limpa (sem hash)
+ * Função para aceitar / iniciar o agendamento vinculando a prancha usando o campo 'frota'
  */
 export async function aceitarEIniciarAgendamento(params: {
   reservaId: string;
-  pranchaId: string; // Ex: "31220" ou "31121"
+  pranchaId: string; // Ex: "31221" ou "31121"
   motoristaUid: string;
   motoristaNome: string;
 }) {
   const { reservaId, pranchaId, motoristaUid, motoristaNome } = params;
-  const idPranchaLimpo = pranchaId.toString().trim();
+  const valorFrotaLimpo = pranchaId.toString().trim();
 
-  if (!reservaId || !idPranchaLimpo) {
+  if (!reservaId || !valorFrotaLimpo) {
     throw new Error("Agendamento e Prancha são obrigatórios para aceitar.");
   }
 
-  // 1. Atualiza a reserva na coleção /agenda
+  // 1. Atualiza o documento na coleção /agenda
   const reservaRef = doc(db, "agenda", reservaId);
   await updateDoc(reservaRef, {
-    pranchaId: idPranchaLimpo,
-    frotaId: idPranchaLimpo,
-    frota: idPranchaLimpo,
-    numeroPrancha: idPranchaLimpo,
+    pranchaId: valorFrotaLimpo,
+    frotaId: valorFrotaLimpo,
+    frota: valorFrotaLimpo,
+    numeroPrancha: valorFrotaLimpo,
     motoristaId: motoristaUid,
     motoristaNome: motoristaNome,
     status: "APROVADO",
     iniciadoEm: new Date().toISOString(),
   });
 
-  // 2. Atualiza o status da prancha/veículo para EM_USO nas coleções /frotas e /frota
+  // 2. Localiza o documento da prancha no banco pelo valor do campo 'frota'
+  const docPrancha = await findFrotaByFrotaField(valorFrotaLimpo);
+
+  // Se o documento existe, usamos o ID real dele (mesmo que seja Hash); se não existir, usamos o número limpo
+  const targetDocId = docPrancha ? docPrancha.id : valorFrotaLimpo;
+
   const frotaData = {
-    id: idPranchaLimpo,
-    frota: idPranchaLimpo,
-    numero: idPranchaLimpo,
+    id: targetDocId,
+    frota: valorFrotaLimpo,
+    numero: valorFrotaLimpo,
     status: "EM_USO",
     reservaAtualId: reservaId,
-    atualizadoEm: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
-  await setDoc(doc(db, "frotas", idPranchaLimpo), frotaData, { merge: true });
-  await setDoc(doc(db, "frota", idPranchaLimpo), frotaData, { merge: true });
+  // 3. Sincroniza a alteração de status em ambas as coleções (/frotas e /frota)
+  await setDoc(doc(db, "frotas", targetDocId), frotaData, { merge: true });
+  await setDoc(doc(db, "frota", targetDocId), frotaData, { merge: true });
 }
