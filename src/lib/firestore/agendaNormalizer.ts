@@ -16,11 +16,17 @@ const FIELD_MAPPINGS = {
 
 /**
  * Verifica se uma string é um ID do tipo Hash gerado pelo Firestore (ex: NDzxazexT2pwkzJLGVef)
+ * Instrução: Considera hash qualquer string alfanumérica longa (>= 15 caracteres) que contenha letras e números.
  */
 function isFirestoreHash(val: string): boolean {
   if (!val) return false;
-  // Hashes do Firebase possuem exatamente 20 caracteres alfanuméricos e misturam maiúsculas/minúsculas sem traços/espaços
-  return val.length === 20 && /^[a-zA-Z0-9]{20}$/.test(val);
+  const s = val.trim();
+  // Se for muito curto, não é hash do Firestore
+  if (s.length < 15) return false;
+  // Se contiver apenas números, provavelmente é um código de frota longo, não um hash aleatório
+  if (/^\d+$/.test(s)) return false;
+  // Se for alfanumérico e longo, é quase certamente um ID interno do Firebase
+  return /^[a-zA-Z0-9_-]{15,30}$/.test(s);
 }
 
 /**
@@ -112,7 +118,7 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
     // Frota / Equipamento
     pranchaId: frotaNumeroLegivel, // Agora garante o número limpo (Ex: "31221")
     frotaId: frotaNumeroLegivel,
-    frotaNumero: frotaNumeroLegivel,
+    frotaNumeroLegivel: frotaNumeroLegivel,
     frota: frotaNumeroLegivel,
     equipamentoId: data?.equipamentoId || data?.equipamento || null,
     equipamentoNome: normalizeString(
@@ -140,7 +146,7 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
       "Não informada",
     ),
 
-    // Operação
+    // Operach
     motoristaId: data?.motoristaId || null,
     motoristaNome: normalizeString(data?.motoristaNome || data?.motorista, "Não informado"),
 
@@ -148,7 +154,7 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
     horarioFimReal: data?.horarioFimReal || data?.finalizadoEm || null,
     iniciadoEm: data?.iniciadoEm || data?.horarioInicioReal || null,
     iniciadoPor: data?.iniciadoPor || null,
-    finalizadoEm: data?.finalizadoEm || data?.horarioFimReal || null,
+    finalizadoUm: data?.finalizadoEm || data?.horarioFimReal || null,
     finalizadoPor: data?.finalizadoPor || null,
 
     observacao: normalizeString(data?.observacao || data?.obs || data?.justificativa, "Nenhuma"),
