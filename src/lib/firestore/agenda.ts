@@ -2,34 +2,50 @@ import {
   collection,
   onSnapshot,
   query,
+  where,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
   QuerySnapshot,
   DocumentData,
-  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { Reserva } from "@/types";
+import { Reserva, UserProfile } from "@/types";
 import { normalizeAgendaRecord } from "./agendaNormalizer";
-import { UserProfile } from "@/types";
 
+/**
+ * Escuta as atualizações da agenda em tempo real.
+ * Libera visão total para Administradores, GOD e Liderança, ou filtra pelos papéis do usuário.
+ */
 export function subscribeToAgenda(
   callback: (agenda: Reserva[]) => void,
   userProfile?: UserProfile | null,
 ) {
   const uid = userProfile?.uid;
-  const role = userProfile?.role;
-  const isPrivileged = role === "GOD" || role === "ADMINISTRADOR" || role === "LIDER";
+  const rawRole = (userProfile?.role || (userProfile as any)?.funcao || "").toString().toUpperCase().trim();
 
-  if (isPrivileged) {
+  // Perfis privilegiados com acesso total
+  const isPrivileged =
+    rawRole === "GOD" ||
+    rawRole === "ADMIN" ||
+    rawRole === "ADMINISTRADOR" ||
+    rawRole === "LIDER" ||
+    rawRole === "FRENTE" ||
+    rawRole === "PRANCHA";
+
+  if (isPrivileged || !uid) {
+    // Se for privilegiado, busca toda a agenda. Se não houver UID, lê coleção vazia/geral com fallback.
     const q = query(collection(db, "agenda"));
     return onSnapshot(
       q,
       (snapshot: QuerySnapshot<DocumentData>) => {
-        const agenda = snapshot.docs.map((doc) => {
+        const agenda = snapshot.docs.map((docSnap) => {
           try {
-            return normalizeAgendaRecord(doc.id, doc.data());
+            return normalizeAgendaRecord(docSnap.id, docSnap.data());
           } catch (err) {
-            console.error(`[AGENDA] Erro ao normalizar doc ${doc.id}:`, err);
-            return normalizeAgendaRecord(doc.id, {});
+            console.error(`[AGENDA] Erro ao normalizar doc ${docSnap.id}:`, err);
+            return normalizeAgendaRecord(docSnap.id, {});
           }
         });
         callback(agenda);
@@ -41,40 +57,90 @@ export function subscribeToAgenda(
     );
   }
 
-  if (!uid) {
-    callback([]);
-    return () => {};
-  }
-
-  // Fallback para usuários comuns: Múltiplas queries para simular OR
+  // Fallback para usuários comuns: Múltiplas queries para simular operador OR no Firestore
   const q1 = query(collection(db, "agenda"), where("solicitanteId", "==", uid));
   const q2 = query(collection(db, "agenda"), where("motoristaId", "==", uid));
   const q3 = query(collection(db, "agenda"), where("userId", "==", uid));
+  const q4 = query(collection(db, "agenda"), where("criadoPorUid", "==", uid));
 
   const resultsMap = new Map<string, Reserva>();
 
   const emit = () => {
-    callback(Array.from(resultsMap.values()));
+    const lista = Array.from(resultsMap.values()).sort((a, b) => {
+      const dateA = new Date(a.criadoEm || a.dataHora || 0).getTime();
+      const dateB = new Date(b.criadoEm || b.dataHora || 0).getTime();
+      return dateB - dateA;
+    });
+    callback(lista);
   };
 
   const processSnapshot = (snapshot: QuerySnapshot<DocumentData>) => {
-    snapshot.docs.forEach((doc) => {
-      try {
-        resultsMap.set(doc.id, normalizeAgendaRecord(doc.id, doc.data()));
-      } catch (err) {
-        console.error(`[AGENDA] Erro ao normalizar doc ${doc.id}:`, err);
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "removed") {
+        resultsMap.delete(change.doc.id);
+      } else {
+        try {
+          resultsMap.set(change.doc.id, normalizeAgendaRecord(change.doc.id, change.doc.data()));
+        } catch (err) {
+          console.error(`[AGENDA] Erro ao normalizar doc ${change.doc.id}:`, err);
+        }
       }
     });
     emit();
   };
 
-  const unsub1 = onSnapshot(q1, processSnapshot);
-  const unsub2 = onSnapshot(q2, processSnapshot);
-  const unsub3 = onSnapshot(q3, processSnapshot);
+  const unsub1 = onSnapshot(q1, processSnapshot, (err) => console.error("[AGENDA q1]:", err));
+  const unsub2 = onSnapshot(q2, processSnapshot, (err) => console.error("[AGENDA q2]:", err));
+  const unsub3 = onSnapshot(q3, processSnapshot, (err) => console.error("[AGENDA q3]:", err));
+  const unsub4 = onSnapshot(q4, processSnapshot, (err) => console.error("[AGENDA q4]:", err));
 
   return () => {
-    unsub1?.();
-    unsub2?.();
-    unsub3?.();
+    unsub1();
+    unsub2();
+    unsub3();
+    unsub4();
   };
+}
+
+/**
+ * Função para aceitar / iniciar o agendamento vinculando a prancha de forma limpa (sem hash)
+ */
+export async function aceitarEIniciarAgendamento(params: {
+  reservaId: string;
+  pranchaId: string; // Ex: "31220" ou "31121"
+  motoristaUid: string;
+  motoristaNome: string;
+}) {
+  const { reservaId, pranchaId, motoristaUid, motoristaNome } = params;
+  const idPranchaLimpo = pranchaId.toString().trim();
+
+  if (!reservaId || !idPranchaLimpo) {
+    throw new Error("Agendamento e Prancha são obrigatórios para aceitar.");
+  }
+
+  // 1. Atualiza a reserva na coleção /agenda
+  const reservaRef = doc(db, "agenda", reservaId);
+  await updateDoc(reservaRef, {
+    pranchaId: idPranchaLimpo,
+    frotaId: idPranchaLimpo,
+    frota: idPranchaLimpo,
+    numeroPrancha: idPranchaLimpo,
+    motoristaId: motoristaUid,
+    motoristaNome: motoristaNome,
+    status: "APROVADO",
+    iniciadoEm: new Date().toISOString(),
+  });
+
+  // 2. Atualiza o status da prancha/veículo para EM_USO nas coleções /frotas e /frota
+  const frotaData = {
+    id: idPranchaLimpo,
+    frota: idPranchaLimpo,
+    numero: idPranchaLimpo,
+    status: "EM_USO",
+    reservaAtualId: reservaId,
+    atualizadoEm: new Date().toISOString(),
+  };
+
+  await setDoc(doc(db, "frotas", idPranchaLimpo), frotaData, { merge: true });
+  await setDoc(doc(db, "frota", idPranchaLimpo), frotaData, { merge: true });
 }
