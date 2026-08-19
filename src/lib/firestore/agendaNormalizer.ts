@@ -16,17 +16,11 @@ const FIELD_MAPPINGS = {
 
 /**
  * Verifica se uma string é um ID do tipo Hash gerado pelo Firestore (ex: NDzxazexT2pwkzJLGVef)
- * Instrução: Considera hash qualquer string alfanumérica longa (>= 15 caracteres) que contenha letras e números.
  */
-function isFirestoreHash(val: string): boolean {
+export function isFirestoreHash(val: string): boolean {
   if (!val) return false;
-  const s = val.trim();
-  // Se for muito curto, não é hash do Firestore
-  if (s.length < 15) return false;
-  // Se contiver apenas números, provavelmente é um código de frota longo, não um hash aleatório
-  if (/^\d+$/.test(s)) return false;
-  // Se for alfanumérico e longo, é quase certamente um ID interno do Firebase
-  return /^[a-zA-Z0-9_-]{15,30}$/.test(s);
+  // Hashes do Firebase possuem exatamente 20 caracteres alfanuméricos e misturam maiúsculas/minúsculas sem traços/espaços
+  return val.length === 20 && /^[a-zA-Z0-9]{20}$/.test(val);
 }
 
 /**
@@ -74,8 +68,10 @@ export function normalizeReservaStatus(rawStatus: any): AgendaStatus {
   if (s.includes("PEND")) return "Pendente";
   if (s.includes("AGEN")) return "Agendado";
   if (s.includes("APROV") || s.includes("CONFIRM") || s === "ALOCADO") return "Aprovado";
-  if (s.includes("INIC") || s === "EM OPERAÇÃO" || s === "EM_ANDAMENTO" || s === "EM OPERACAO") return "Iniciado";
-  if (s.includes("TRÂN") || s.includes("TRAN") || s.includes("ANDAM") || s === "VIAGEM") return "Em Trânsito";
+  if (s.includes("INIC") || s === "EM OPERAÇÃO" || s === "EM_ANDAMENTO" || s === "EM OPERACAO")
+    return "Iniciado";
+  if (s.includes("TRÂN") || s.includes("TRAN") || s.includes("ANDAM") || s === "VIAGEM")
+    return "Em Trânsito";
   if (s.includes("FINAL") || s === "CONCLUÍDO" || s === "CONCLUIDO") return "Finalizado";
   if (s.includes("CONCLU")) return "Concluído";
   if (s.includes("RECUS")) return "Recusado";
@@ -100,9 +96,16 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
   const horaVal = resolveValue(data, FIELD_MAPPINGS.hora, "");
   const origemVal = resolveValue(data, FIELD_MAPPINGS.origem, "Não informado");
   const destinoVal = resolveValue(data, FIELD_MAPPINGS.destino, "Não informado");
-  
+
   // Resolve o número legível da frota (Ex: "31221") ignorando hashes
   const frotaNumeroLegivel = resolveValue(data, FIELD_MAPPINGS.frota, "N/A");
+
+  // Resolve a frente de trabalho ignorando IDs hash (Ex: "SUL DE ENGENHO")
+  const frenteLegivel = resolveValue(
+    data,
+    ["frenteTrabalho", "frente", "frenteNome", "frenteId"],
+    "Não informada",
+  );
 
   return {
     id: id,
@@ -118,7 +121,7 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
     // Frota / Equipamento
     pranchaId: frotaNumeroLegivel, // Agora garante o número limpo (Ex: "31221")
     frotaId: frotaNumeroLegivel,
-    frotaNumeroLegivel: frotaNumeroLegivel,
+    frotaNumero: frotaNumeroLegivel,
     frota: frotaNumeroLegivel,
     equipamentoId: data?.equipamentoId || data?.equipamento || null,
     equipamentoNome: normalizeString(
@@ -137,16 +140,10 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
 
     origem: origemVal,
     destino: destinoVal,
-    frenteId: normalizeString(
-      data?.frenteId || data?.frenteTrabalho || data?.frente,
-      "Não informada",
-    ),
-    frenteTrabalho: normalizeString(
-      data?.frenteTrabalho || data?.frenteId || data?.frente,
-      "Não informada",
-    ),
+    frenteId: frenteLegivel,
+    frenteTrabalho: frenteLegivel,
 
-    // Operach
+    // Operação
     motoristaId: data?.motoristaId || null,
     motoristaNome: normalizeString(data?.motoristaNome || data?.motorista, "Não informado"),
 
@@ -154,7 +151,7 @@ export function normalizeAgendaRecord(id: string, data: any): Reserva {
     horarioFimReal: data?.horarioFimReal || data?.finalizadoEm || null,
     iniciadoEm: data?.iniciadoEm || data?.horarioInicioReal || null,
     iniciadoPor: data?.iniciadoPor || null,
-    finalizadoUm: data?.finalizadoEm || data?.horarioFimReal || null,
+    finalizadoEm: data?.finalizadoEm || data?.horarioFimReal || null,
     finalizadoPor: data?.finalizadoPor || null,
 
     observacao: normalizeString(data?.observacao || data?.obs || data?.justificativa, "Nenhuma"),

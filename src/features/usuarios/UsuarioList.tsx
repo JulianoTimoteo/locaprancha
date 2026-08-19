@@ -107,129 +107,131 @@ export function UsuarioList() {
       </div>
 
       <div className="border rounded-xl bg-card overflow-hidden shadow-md">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="font-black text-xs uppercase">Usuário</TableHead>
-              <TableHead className="font-black text-xs uppercase">E-mail</TableHead>
-              <TableHead className="font-black text-xs uppercase">Perfil</TableHead>
-              <TableHead className="font-black text-xs uppercase">Status</TableHead>
-              <TableHead className="font-black text-xs uppercase">Último Acesso</TableHead>
-              <TableHead className="text-right font-black text-xs uppercase">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedUsuarios.map((u) => {
-              const role = u.role;
-              const isGodProfile = role === "GOD";
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead className="font-black text-xs uppercase">Usuário</TableHead>
+                <TableHead className="font-black text-xs uppercase">E-mail</TableHead>
+                <TableHead className="font-black text-xs uppercase">Perfil</TableHead>
+                <TableHead className="font-black text-xs uppercase">Status</TableHead>
+                <TableHead className="font-black text-xs uppercase">Último Acesso</TableHead>
+                <TableHead className="text-right font-black text-xs uppercase">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedUsuarios.map((u) => {
+                const role = u.role;
+                const isGodProfile = role === "GOD";
 
-              return (
-                <TableRow key={u.uid} className="hover:bg-muted/10 transition-colors">
-                  <TableCell className="font-bold">
-                    <div className="flex flex-col">
-                      <span className="text-primary flex items-center gap-1">
-                        {isGodProfile && <ShieldAlert size={14} className="text-amber-500" />}
-                        {u.name}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
-                        @{u.nickname}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    <div className="flex flex-col">
-                      <span>{u.email}</span>
-                      {u.emailTipo === "FAKE" && (
-                        <span className="text-[9px] text-amber-600 font-bold uppercase">
-                          Gerado pelo sistema
+                return (
+                  <TableRow key={u.uid} className="hover:bg-muted/10 transition-colors">
+                    <TableCell className="font-bold">
+                      <div className="flex flex-col">
+                        <span className="text-primary flex items-center gap-1">
+                          {isGodProfile && <ShieldAlert size={14} className="text-amber-500" />}
+                          {u.name}
                         </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={isGodProfile ? "destructive" : "outline"}
-                      className="font-black text-[10px]"
-                    >
-                      {role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={u.status === "ATIVO" ? "default" : "secondary"}
-                      className={u.status === "ATIVO" ? "bg-green-500 hover:bg-green-600" : ""}
-                    >
-                      {u.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground font-medium">
-                    {u.ultimoAcesso?.toDate
-                      ? format(u.ultimoAcesso.toDate(), "dd/MM/yyyy HH:mm")
-                      : "Nunca"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={isGodProfile && !isGod}
-                        className="font-bold text-xs"
-                        onClick={() => handleEdit(u)}
+                        <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
+                          @{u.nickname}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <div className="flex flex-col">
+                        <span>{u.email}</span>
+                        {u.emailTipo === "FAKE" && (
+                          <span className="text-[9px] text-amber-600 font-bold uppercase">
+                            Gerado pelo sistema
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={isGodProfile ? "destructive" : "outline"}
+                        className="font-black text-[10px]"
                       >
-                        Editar
-                      </Button>
+                        {role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={u.status === "ATIVO" ? "default" : "secondary"}
+                        className={u.status === "ATIVO" ? "bg-green-500 hover:bg-green-600" : ""}
+                      >
+                        {u.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground font-medium">
+                      {u.ultimoAcesso?.toDate
+                        ? format(u.ultimoAcesso.toDate(), "dd/MM/yyyy HH:mm")
+                        : "Nunca"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={isGodProfile && !isGod}
+                          className="font-bold text-xs"
+                          onClick={() => handleEdit(u)}
+                        >
+                          Editar
+                        </Button>
 
-                      {!isGodProfile && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={
-                              u.status === "ATIVO"
-                                ? "text-amber-600 hover:text-amber-700"
-                                : "text-green-600 hover:text-green-700"
-                            }
-                            onClick={() =>
-                              updateStatus(u.uid, u.status === "ATIVO" ? "BLOQUEADO" : "ATIVO")
-                            }
-                          >
-                            {u.status === "ATIVO" ? "Bloquear" : "Desbloquear"}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:bg-red-50"
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  "Excluir usuário?\n\nEssa operação removerá o perfil do sistema e poderá afetar registros históricos.",
-                                )
-                              ) {
-                                deleteUsuario(u.uid);
+                        {!isGodProfile && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={
+                                u.status === "ATIVO"
+                                  ? "text-amber-600 hover:text-amber-700"
+                                  : "text-green-600 hover:text-green-700"
                               }
-                            }}
-                          >
-                            <UserMinus size={16} />
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                              onClick={() =>
+                                updateStatus(u.uid, u.status === "ATIVO" ? "BLOQUEADO" : "ATIVO")
+                              }
+                            >
+                              {u.status === "ATIVO" ? "Bloquear" : "Desbloquear"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:bg-red-50"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    "Excluir usuário?\n\nEssa operação removerá o perfil do sistema e poderá afetar registros históricos.",
+                                  )
+                                ) {
+                                  deleteUsuario(u.uid);
+                                }
+                              }}
+                            >
+                              <UserMinus size={16} />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {filteredUsuarios.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="h-40 text-center text-muted-foreground font-medium italic"
+                  >
+                    Nenhum usuário encontrado.
                   </TableCell>
                 </TableRow>
-              );
-            })}
-            {filteredUsuarios.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-40 text-center text-muted-foreground font-medium italic"
-                >
-                  Nenhum usuário encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
       {filteredUsuarios.length > pageSize && (
         <div className="flex items-center justify-between px-1 pt-2">

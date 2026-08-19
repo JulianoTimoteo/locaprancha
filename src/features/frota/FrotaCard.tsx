@@ -12,9 +12,10 @@ interface FrotaCardProps {
   onEdit: (frota: Frota) => void;
   onWorkshop: (frota: Frota) => void;
   onRelease: (frota: Frota) => void;
+  onLocar: (frota: Frota) => void;
 }
 
-export function FrotaCard({ frota, onEdit, onWorkshop, onRelease }: FrotaCardProps) {
+export function FrotaCard({ frota, onEdit, onWorkshop, onRelease, onLocar }: FrotaCardProps) {
   const { profile } = useAuth();
   const canManage = canManageFleet(profile);
 
@@ -53,10 +54,7 @@ export function FrotaCard({ frota, onEdit, onWorkshop, onRelease }: FrotaCardPro
               size="sm"
               className="col-span-2 font-black text-xs gap-2 bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
               disabled={frota.status !== "DISPONÍVEL"}
-              onClick={() => {
-                const event = new CustomEvent("open-locar", { detail: { pranchaId: frota.frota } });
-                window.dispatchEvent(event);
-              }}
+              onClick={() => onLocar(frota)}
             >
               LOCAR AGORA 🛣️
             </Button>

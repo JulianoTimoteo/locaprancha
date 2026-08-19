@@ -80,6 +80,20 @@ export function ReservaForm({
     [frentes],
   );
 
+  // Filtra apenas pranchas sem operação ativa no momento
+  // (exclui ALOCADO/EM_USO/EM OPERAÇÃO/OFICINA; inclui sem status ou DISPONÍVEL)
+  const pranchasDisponiveis = React.useMemo(
+    () =>
+      pranchas.filter((p) => {
+        const status = String(p.status || "")
+          .trim()
+          .toUpperCase();
+        if (!status) return true;
+        return status === "DISPONÍVEL" || status === "DISPONIVEL";
+      }),
+    [pranchas],
+  );
+
   const equipamentosFiltrados = React.useMemo(() => {
     if (!formData.frenteId) return equipamentos;
     const frente = frentes.find((f) => f.id === formData.frenteId);
@@ -214,24 +228,16 @@ export function ReservaForm({
                 </SelectTrigger>
 
                 <SelectContent>
-                  {pranchas
-                    .filter((p) => {
-                      const status = String(p.status || "")
-                        .trim()
-                        .toUpperCase();
-                      if (isAlocacaoDireta) return status === "DISPONÍVEL";
-                      return true;
-                    })
-                    .map((p) => (
-                      <SelectItem key={p.id} value={p.frota}>
-                        <div className="flex flex-col text-left">
-                          <span className="font-bold">🚚 FROTA {p.frota}</span>
-                          <span className="text-[10px] opacity-70">
-                            {p.placa} — {p.nome}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                  {pranchasDisponiveis.map((p) => (
+                    <SelectItem key={p.id} value={p.frota}>
+                      <div className="flex flex-col text-left">
+                        <span className="font-bold">🚚 FROTA {p.frota}</span>
+                        <span className="text-[10px] opacity-70">
+                          {p.placa} — {p.nome}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

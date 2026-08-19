@@ -112,4 +112,8 @@ export interface Reserva {
   motivoRecusa: string;
   createdAt: any | null;
   testeSistema?: boolean;
+  // Compatibilidade legada (não fazem parte do modelo novo)
+  frota?: string;
+  criadoEm?: any;
+  dataHora?: any;
 }

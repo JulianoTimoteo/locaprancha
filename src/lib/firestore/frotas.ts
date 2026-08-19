@@ -69,14 +69,14 @@ export async function findFrotaByFrotaField(
  */
 export async function addOrUpdateFrota(data: Partial<Frota> & { frota: string }): Promise<string> {
   const frotaValor = data.frota.toString().trim();
-  
+
   if (!frotaValor) {
     throw new Error("O identificador do veículo (campo 'frota') é obrigatório.");
   }
 
   // Verifica se o documento já existe buscando pelo campo 'frota'
   const docExistente = await findFrotaByFrotaField(frotaValor);
-  
+
   // Se existir, reutiliza o ID do documento existente (seja Hash ou numérico)
   const docId = docExistente ? docExistente.id : frotaValor;
 

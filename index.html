@@ -3,15 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="logo-pitangueiras.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="pwa-192x192.png" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#40800c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Locaprancha" />
-    <link rel="apple-touch-icon" href="logo-pitangueiras.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="apple-touch-icon-120.png" />
     <link rel="manifest" href="manifest.json" />
     <meta
       name="description"
@@ -100,27 +104,21 @@
       </p>
       <style>
         @keyframes spin {
-          to { transform: rotate(360deg); }
+          to {
+            transform: rotate(360deg);
+          }
         }
       </style>
       <script>
-        // Unregister any stale ServiceWorkers from previous PWA builds
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function (registrations) {
-            for (var i = 0; i < registrations.length; i++) {
-              registrations[i].unregister();
-            }
-          });
-        }
-
         // Safety net: If React fails to mount into #root within 5s, show recovery button
-        setTimeout(function() {
+        setTimeout(function () {
           var root = document.getElementById("root");
           var loader = document.getElementById("emergency-loader");
           if (loader && (!root || !root.firstElementChild)) {
             var text = document.getElementById("loader-status-text");
             if (text) {
-              text.innerHTML = 'A inicialização está demorando.<br/><button onclick="localStorage.clear();sessionStorage.clear();window.location.reload();" style="margin-top:12px;padding:10px 18px;background:#40800c;color:white;border:none;border-radius:10px;font-weight:900;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 12px rgba(64,128,12,0.3)">RECARREGAR APLICAÇÃO</button>';
+              text.innerHTML =
+                'A inicialização está demorando.<br/><button onclick="localStorage.clear();sessionStorage.clear();window.location.reload();" style="margin-top:12px;padding:10px 18px;background:#40800c;color:white;border:none;border-radius:10px;font-weight:900;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 12px rgba(64,128,12,0.3)">RECARREGAR APLICAÇÃO</button>';
             }
           }
         }, 5000);

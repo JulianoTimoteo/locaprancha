@@ -58,7 +58,7 @@ export function Layout({ children, activeView, onNavigate }: LayoutProps) {
   const filteredMenu = menuItems.filter((item) => canAccessTab(profile, item.id));
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans relative">
+    <div className="flex h-screen supports-[height:100dvh]:h-dvh bg-background text-foreground overflow-hidden font-sans relative">
       <ConnectionBanner />
       {loggingOut && <AuthLoader message="Saindo..." />}
 

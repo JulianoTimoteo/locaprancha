@@ -5,56 +5,32 @@ import {
   where,
   doc,
   setDoc,
-  addDoc,
   updateDoc,
   getDocs,
   QuerySnapshot,
   DocumentData,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { Reserva, UserProfile } from "@/types";
+import { Reserva, UserProfile, Frota } from "@/types";
 import { normalizeAgendaRecord } from "./agendaNormalizer";
 import { findFrotaByFrotaField } from "./frotas";
+import { normalizeFrota, normalizeString } from "./normalizers";
 
 /**
- * Normaliza a string de status para comparação segura
- */
-function normalizarStatus(status: any): string {
-  return (status || "").toString().toUpperCase().trim();
-}
-
-/**
- * Retorna apenas as pranchas/frotas que estão totalmente DISPONÍVEIS para novos agendamentos.
- * Utilize esta função para preencher o <select> do formulário/modal de criação.
- */
-export async function obterPranchasDisponiveis() {
-  const querySnapshot = await getDocs(collection(db, "frotas"));
-  const disponiveis: DocumentData[] = [];
-
-  querySnapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const status = normalizarStatus(data.status);
-
-    // Considera disponível se o status for DISPONÍVEL, DISPONIVEL ou se não houver status registrado
-    if (status === "DISPONÍVEL" || status === "DISPONIVEL" || !status) {
-      disponiveis.push({ id: docSnap.id, ...data });
-    }
-  });
-
-  return disponiveis;
-}
-
-/**
- * Assinatura em tempo real para a lista da Agenda Operacional.
+ * Escuta as atualizações da agenda em tempo real.
+ * Libera visão total para Administradores, GOD e Liderança, ou filtra pelos papéis do usuário.
  */
 export function subscribeToAgenda(
   callback: (agenda: Reserva[]) => void,
   userProfile?: UserProfile | null,
 ) {
   const uid = userProfile?.uid;
-  const rawRole = normalizarStatus(userProfile?.role || (userProfile as any)?.funcao);
+  const rawRole = (userProfile?.role || (userProfile as any)?.funcao || "")
+    .toString()
+    .toUpperCase()
+    .trim();
 
-  // Perfis administrativos com visualização irrestrita
+  // Perfis privilegiados com acesso total
   const isPrivileged =
     rawRole === "GOD" ||
     rawRole === "ADMIN" ||
@@ -72,20 +48,20 @@ export function subscribeToAgenda(
           try {
             return normalizeAgendaRecord(docSnap.id, docSnap.data());
           } catch (err) {
-            console.error(`[AGENDA] Erro ao normalizar registro ${docSnap.id}:`, err);
+            console.error(`[AGENDA] Erro ao normalizar doc ${docSnap.id}:`, err);
             return normalizeAgendaRecord(docSnap.id, {});
           }
         });
         callback(agenda);
       },
       (error) => {
-        console.error("[AGENDA] Erro ao carregar assinaturas em tempo real:", error);
+        console.error("[AGENDA] Erro fatal na assinatura:", error);
         callback([]);
       },
     );
   }
 
-  // Fallback para perfis comuns
+  // Fallback para usuários comuns: Múltiplas queries para simular operador OR no Firestore
   const q1 = query(collection(db, "agenda"), where("solicitanteId", "==", uid));
   const q2 = query(collection(db, "agenda"), where("motoristaId", "==", uid));
   const q3 = query(collection(db, "agenda"), where("userId", "==", uid));
@@ -131,51 +107,12 @@ export function subscribeToAgenda(
 }
 
 /**
- * Cria um novo agendamento na agenda e valida se a prancha escolhida está livre.
- */
-export async function criarNovoAgendamento(dadosAgendamento: any) {
-  const frotaNumero = (
-    dadosAgendamento.frota ||
-    dadosAgendamento.pranchaId ||
-    dadosAgendamento.numeroPrancha ||
-    ""
-  )
-    .toString()
-    .trim();
-
-  if (!frotaNumero) {
-    throw new Error("Selecione uma prancha/frota válida para prosseguir.");
-  }
-
-  // 1. Consulta o cadastro do veículo para verificar o status atual
-  const docPrancha = await findFrotaByFrotaField(frotaNumero);
-
-  if (docPrancha) {
-    const statusAtual = normalizarStatus(docPrancha.data()?.status);
-
-    if (statusAtual === "EM_USO" || statusAtual === "EM OPERAÇÃO" || statusAtual === "EM OPERACAO") {
-      throw new Error(`A prancha [${frotaNumero}] já possui uma locação ativa em andamento.`);
-    }
-  }
-
-  // 2. Registra o agendamento no Firestore com status PENDENTE por padrão
-  const agendaRef = collection(db, "agenda");
-  return await addDoc(agendaRef, {
-    ...dadosAgendamento,
-    frota: frotaNumero,
-    pranchaId: frotaNumero,
-    numeroPrancha: frotaNumero,
-    status: dadosAgendamento.status || "PENDENTE",
-    criadoEm: new Date().toISOString(),
-  });
-}
-
-/**
- * Valida o aceite e inicia a locação, alterando os status das coleções do Firestore.
+ * Função para aceitar / iniciar o agendamento vinculando a prancha usando o campo 'frota'
+ * TRAVA DE SEGURANÇA: impede aceitar/iniciar quando a prancha já está em operação.
  */
 export async function aceitarEIniciarAgendamento(params: {
   reservaId: string;
-  pranchaId: string; // Ex: "31121"
+  pranchaId: string; // Ex: "31221" ou "31121"
   motoristaUid: string;
   motoristaNome: string;
 }) {
@@ -183,27 +120,22 @@ export async function aceitarEIniciarAgendamento(params: {
   const valorFrotaLimpo = pranchaId.toString().trim();
 
   if (!reservaId || !valorFrotaLimpo) {
-    throw new Error("Agendamento e Prancha são obrigatórios para realizar o aceite.");
+    throw new Error("Agendamento e Prancha são obrigatórios para aceitar.");
   }
 
-  // 1. Busca os dados atuais da prancha no Firestore
+  // 0. TRAVA DE SEGURANÇA: Consulta o status atual da prancha antes de aceitar/iniciar
   const docPrancha = await findFrotaByFrotaField(valorFrotaLimpo);
-
-  if (!docPrancha) {
-    throw new Error(`A prancha [${valorFrotaLimpo}] não foi encontrada na base de frotas.`);
+  if (docPrancha) {
+    const statusPrancha = normalizeString(docPrancha.data()["status"]).toUpperCase();
+    const pranchaEmUso = statusPrancha.includes("EM_USO") || statusPrancha.includes("EM OPERA");
+    if (pranchaEmUso) {
+      throw new Error(
+        `A prancha ${valorFrotaLimpo} já está em uso por outra operação. Aguarde a liberação para aceitar.`,
+      );
+    }
   }
 
-  const dadosPrancha = docPrancha.data();
-  const statusAtual = normalizarStatus(dadosPrancha?.status);
-
-  // 2. Bloqueio definitivo se o veículo já estiver em operação
-  if (statusAtual === "EM_USO" || statusAtual === "EM OPERAÇÃO" || statusAtual === "EM OPERACAO") {
-    throw new Error(`A prancha [${valorFrotaLimpo}] já está em operação no momento.`);
-  }
-
-  const targetDocId = docPrancha.id;
-
-  // 3. Atualiza o status do agendamento para EM OPERAÇÃO
+  // 1. Atualiza o documento na coleção /agenda
   const reservaRef = doc(db, "agenda", reservaId);
   await updateDoc(reservaRef, {
     pranchaId: valorFrotaLimpo,
@@ -216,7 +148,9 @@ export async function aceitarEIniciarAgendamento(params: {
     iniciadoEm: new Date().toISOString(),
   });
 
-  // 4. Marca o veículo como EM_USO nas coleções frotas/frota
+  // Se o documento existe, usamos o ID real dele (mesmo que seja Hash); se não existir, usamos o número limpo
+  const targetDocId = docPrancha ? docPrancha.id : valorFrotaLimpo;
+
   const frotaData = {
     id: targetDocId,
     frota: valorFrotaLimpo,
@@ -226,18 +160,23 @@ export async function aceitarEIniciarAgendamento(params: {
     updatedAt: new Date().toISOString(),
   };
 
+  // 2. Sincroniza a alteração de status em ambas as coleções (/frotas e /frota)
   await setDoc(doc(db, "frotas", targetDocId), frotaData, { merge: true });
   await setDoc(doc(db, "frota", targetDocId), frotaData, { merge: true });
 }
 
 /**
- * Finaliza a locação e reativa o status da prancha para DISPONÍVEL.
+ * Encerra/finaliza uma locação, liberando a prancha nas coleções /frotas e /frota.
  */
-export async function encerrarAgendamento(reservaId: string, pranchaId: string) {
-  const valorFrotaLimpo = pranchaId.toString().trim();
+export async function encerrarAgendamento(params: {
+  reservaId: string;
+  pranchaId?: string | null;
+  relatorio?: string | null;
+}) {
+  const { reservaId, pranchaId, relatorio } = params;
 
   if (!reservaId) {
-    throw new Error("Identificador do agendamento inválido.");
+    throw new Error("Agendamento é obrigatório para encerrar.");
   }
 
   // 1. Atualiza a reserva na coleção /agenda para FINALIZADO
@@ -245,22 +184,42 @@ export async function encerrarAgendamento(reservaId: string, pranchaId: string) 
   await updateDoc(reservaRef, {
     status: "FINALIZADO",
     finalizadoEm: new Date().toISOString(),
+    ...(relatorio ? { relatorio } : {}),
   });
 
-  // 2. Libera a prancha definindo o status como DISPONÍVEL
-  if (valorFrotaLimpo) {
+  // 2. Libera o veículo nas coleções /frotas e /frota
+  if (pranchaId) {
+    const valorFrotaLimpo = pranchaId.toString().trim();
     const docPrancha = await findFrotaByFrotaField(valorFrotaLimpo);
+    const targetDocId = docPrancha ? docPrancha.id : valorFrotaLimpo;
 
-    if (docPrancha) {
-      const targetDocId = docPrancha.id;
-      const frotaData = {
-        status: "DISPONÍVEL",
-        reservaAtualId: null,
-        updatedAt: new Date().toISOString(),
-      };
+    const frotaData = {
+      id: targetDocId,
+      frota: valorFrotaLimpo,
+      numero: valorFrotaLimpo,
+      status: "DISPONÍVEL",
+      reservaAtualId: null,
+      updatedAt: new Date().toISOString(),
+    };
 
-      await setDoc(doc(db, "frotas", targetDocId), frotaData, { merge: true });
-      await setDoc(doc(db, "frota", targetDocId), frotaData, { merge: true });
-    }
+    await setDoc(doc(db, "frotas", targetDocId), frotaData, { merge: true });
+    await setDoc(doc(db, "frota", targetDocId), frotaData, { merge: true });
   }
+}
+
+/**
+ * Retorna apenas as frotas/pranchas disponíveis:
+ * status "DISPONÍVEL", "DISPONIVEL" ou sem status definido.
+ */
+export async function obterPranchasDisponiveis(): Promise<Frota[]> {
+  const q = query(collection(db, "frotas"));
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs
+    .filter((docSnap) => {
+      const status = normalizeString(docSnap.data()["status"]).toUpperCase();
+      if (!status) return true;
+      return status === "DISPONÍVEL" || status === "DISPONIVEL";
+    })
+    .map((docSnap) => normalizeFrota(docSnap.id, docSnap.data()));
 }

@@ -6,6 +6,7 @@ import { subscribeToAgenda } from "@/lib/firestore/agenda";
 import { subscribeToFrotas } from "@/lib/firestore/frotas";
 import { subscribeToUsuarios } from "@/lib/firestore/usuarios";
 import { subscribeToFrentes } from "@/lib/firestore/frentes";
+import { calcularDuracaoOperacao } from "@/lib/utils/reservaFormatting";
 
 export function useRelatoriosData(filters: any) {
   const { profile } = useAuth();
@@ -104,10 +105,9 @@ export function useRelatoriosData(filters: any) {
 
     let totalHoras = 0;
     filteredData.forEach((r) => {
-      if (r.iniciadoEm && r.finalizadoEm) {
-        const start = new Date(r.iniciadoEm.seconds * 1000);
-        const end = new Date(r.finalizadoEm.seconds * 1000);
-        totalHoras += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      const duracao = calcularDuracaoOperacao(r);
+      if (duracao != null && !isNaN(duracao)) {
+        totalHoras += duracao;
       }
     });
 

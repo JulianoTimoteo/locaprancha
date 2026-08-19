@@ -46,6 +46,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Reserva } from "@/types";
 import { hasPermission, isAdmin, isGod } from "@/lib/permissions/permissions";
+import { toast } from "sonner";
 
 export function ReservaList() {
   const { reservas, loading, updateReservaStatus } = useReservas();
@@ -86,6 +87,30 @@ export function ReservaList() {
 
   const canManage = hasPermission(profile, "usuarios"); // Simplificação baseada em permissão real
   const canOperate = hasPermission(profile, "reservas");
+
+  // TRAVA DE DUPLICIDADE: pranchas já associadas a uma operação ativa
+  // ("EM OPERAÇÃO", "Iniciado" ou "Em Trânsito") em qualquer registro da agenda.
+  const pranchasEmUso = React.useMemo(() => {
+    const emUso = new Set<string>();
+    reservas.forEach((r) => {
+      if (["EM OPERAÇÃO", "Iniciado", "Em Trânsito"].includes(r.status)) {
+        const prancha = (r.pranchaId || "").toString().trim().toUpperCase();
+        if (prancha && prancha !== "N/A") emUso.add(prancha);
+      }
+    });
+    return emUso;
+  }, [reservas]);
+
+  const pranchaIndisponivel = (reserva: Reserva) =>
+    pranchasEmUso.has((reserva.pranchaId || "").toString().trim().toUpperCase());
+
+  const handleAceitar = async (reserva: Reserva) => {
+    try {
+      await updateReservaStatus(reserva.id, "Aprovado");
+    } catch (error: any) {
+      toast.error(error?.message || "Não foi possível aceitar a solicitação.");
+    }
+  };
 
   const filtered = useMemo(() => {
     const sorted = [...reservas].sort((a, b) => {
@@ -361,12 +386,18 @@ export function ReservaList() {
                   <div className="pt-2 flex flex-col gap-2">
                     {reserva.status === "Pendente" && isAdmin(profile) && (
                       <div className="flex gap-2">
-                        <Button
-                          className="flex-1 bg-green-600 hover:bg-green-700 font-bold h-12"
-                          onClick={() => updateReservaStatus(reserva.id, "Aprovado")}
-                        >
-                          <Check size={18} className="mr-1" /> ACEITAR
-                        </Button>
+                        {pranchaIndisponivel(reserva) ? (
+                          <span className="flex-1 flex items-center justify-center text-[11px] font-black uppercase text-red-600 bg-red-50 border border-red-200 rounded-md px-2 py-3 text-center">
+                            Prancha Indisponível 🚫
+                          </span>
+                        ) : (
+                          <Button
+                            className="flex-1 bg-green-600 hover:bg-green-700 font-bold h-12"
+                            onClick={() => handleAceitar(reserva)}
+                          >
+                            <Check size={18} className="mr-1" /> ACEITAR
+                          </Button>
+                        )}
                         <Button
                           variant="destructive"
                           className="flex-1 font-bold h-12"
@@ -410,117 +441,129 @@ export function ReservaList() {
 
       {/* Desktop View: Table */}
       <div className="hidden lg:block border rounded-xl bg-card overflow-hidden shadow-md">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="font-black text-xs uppercase">Data/Hora</TableHead>
-              <TableHead className="font-black text-xs uppercase">Frota</TableHead>
-              <TableHead className="font-black text-xs uppercase">Equipamento</TableHead>
-              <TableHead className="font-black text-xs uppercase">Frente Operacional</TableHead>
-              <TableHead className="font-black text-xs uppercase">Origem / Destino</TableHead>
-              <TableHead className="font-black text-xs uppercase">Solicitante</TableHead>
-              <TableHead className="font-black text-xs uppercase">Status</TableHead>
-              <TableHead className="text-right font-black text-xs uppercase">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginated.map((reserva) => (
-              <TableRow key={reserva.id} className="hover:bg-muted/20 transition-colors">
-                <TableCell className="font-bold whitespace-nowrap">
-                  <div className="flex flex-col text-xs">
-                    <span className="whitespace-pre-line leading-tight">
-                      {formatReservaDateTime(reserva)}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-black text-primary text-lg">
-                      🚚 {reserva.pranchaId || "N/A"}
-                    </span>
-                    {reserva.tipoOperacao === "LOCACAO_DIRETA" && (
-                      <span className="text-[8px] font-black bg-emerald-100 text-emerald-800 px-1 rounded w-fit uppercase">
-                        LOCAÇÃO
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-
-                <TableCell className="font-bold">
-                  <span className="text-sm font-bold text-primary">
-                    {reserva.equipamentoNome || "N/A"}
-                  </span>
-                </TableCell>
-
-                <TableCell className="font-bold">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                      {reserva.frenteTrabalho || reserva.frenteId}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col text-[10px] font-bold">
-                    <span className="text-muted-foreground uppercase">
-                      De: {reserva.origem || "N/A"}
-                    </span>
-                    <span className="text-primary uppercase">Para: {reserva.destino || "N/A"}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs font-medium text-muted-foreground">
-                  {reserva.solicitanteNome || "-"}
-                </TableCell>
-                <TableCell>{getStatusBadge(reserva)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    {reserva.status === "Pendente" && canManage && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:bg-green-50 font-black text-xs"
-                          onClick={() => updateReservaStatus(reserva.id, "Aprovado")}
-                        >
-                          ACEITAR
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:bg-red-50 font-black text-xs"
-                          onClick={() => setRecusaModal({ open: true, id: reserva.id, motivo: "" })}
-                        >
-                          RECUSAR
-                        </Button>
-                      </>
-                    )}
-                    {(reserva.status === "Aprovado" || reserva.status === "Agendado") &&
-                      canOperate && (
-                        <Button
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 font-black text-xs"
-                          onClick={() => updateReservaStatus(reserva.id, "Iniciado")}
-                        >
-                          INICIAR
-                        </Button>
-                      )}
-                    {(reserva.status === "Iniciado" || reserva.status === "Em Trânsito") &&
-                      canOperate && (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 font-black text-xs"
-                          onClick={() =>
-                            setConclusaoModal({ open: true, id: reserva.id, relatorio: "" })
-                          }
-                        >
-                          ENCERRAR ❎
-                        </Button>
-                      )}
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead className="font-black text-xs uppercase">Data/Hora</TableHead>
+                <TableHead className="font-black text-xs uppercase">Frota</TableHead>
+                <TableHead className="font-black text-xs uppercase">Equipamento</TableHead>
+                <TableHead className="font-black text-xs uppercase">Frente Operacional</TableHead>
+                <TableHead className="font-black text-xs uppercase">Origem / Destino</TableHead>
+                <TableHead className="font-black text-xs uppercase">Solicitante</TableHead>
+                <TableHead className="font-black text-xs uppercase">Status</TableHead>
+                <TableHead className="text-right font-black text-xs uppercase">Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginated.map((reserva) => (
+                <TableRow key={reserva.id} className="hover:bg-muted/20 transition-colors">
+                  <TableCell className="font-bold whitespace-nowrap">
+                    <div className="flex flex-col text-xs">
+                      <span className="whitespace-pre-line leading-tight">
+                        {formatReservaDateTime(reserva)}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-black text-primary text-lg">
+                        🚚 {reserva.pranchaId || "N/A"}
+                      </span>
+                      {reserva.tipoOperacao === "LOCACAO_DIRETA" && (
+                        <span className="text-[8px] font-black bg-emerald-100 text-emerald-800 px-1 rounded w-fit uppercase">
+                          LOCAÇÃO
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="font-bold">
+                    <span className="text-sm font-bold text-primary">
+                      {reserva.equipamentoNome || "N/A"}
+                    </span>
+                  </TableCell>
+
+                  <TableCell className="font-bold">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        {reserva.frenteTrabalho || reserva.frenteId}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col text-[10px] font-bold">
+                      <span className="text-muted-foreground uppercase">
+                        De: {reserva.origem || "N/A"}
+                      </span>
+                      <span className="text-primary uppercase">
+                        Para: {reserva.destino || "N/A"}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-medium text-muted-foreground">
+                    {reserva.solicitanteNome || "-"}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(reserva)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {reserva.status === "Pendente" && canManage && (
+                        <>
+                          {pranchaIndisponivel(reserva) ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-red-50 border border-red-200 text-red-600 font-black text-[10px] whitespace-nowrap">
+                              Prancha Indisponível 🚫
+                            </span>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:bg-green-50 font-black text-xs"
+                              onClick={() => handleAceitar(reserva)}
+                            >
+                              ACEITAR
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-red-50 font-black text-xs"
+                            onClick={() =>
+                              setRecusaModal({ open: true, id: reserva.id, motivo: "" })
+                            }
+                          >
+                            RECUSAR
+                          </Button>
+                        </>
+                      )}
+                      {(reserva.status === "Aprovado" || reserva.status === "Agendado") &&
+                        canOperate && (
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 font-black text-xs"
+                            onClick={() => updateReservaStatus(reserva.id, "Iniciado")}
+                          >
+                            INICIAR
+                          </Button>
+                        )}
+                      {(reserva.status === "Iniciado" || reserva.status === "Em Trânsito") &&
+                        canOperate && (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 font-black text-xs"
+                            onClick={() =>
+                              setConclusaoModal({ open: true, id: reserva.id, relatorio: "" })
+                            }
+                          >
+                            ENCERRAR ❎
+                          </Button>
+                        )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {filtered.length === 0 && (

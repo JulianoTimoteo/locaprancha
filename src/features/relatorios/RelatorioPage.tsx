@@ -32,6 +32,7 @@ import {
   Filter,
 } from "lucide-react";
 import { generateOperationalReportPdf } from "@/lib/pdf/reportPdfGenerator";
+import { calcularDuracaoOperacao, formatarDuracao } from "@/lib/utils/reservaFormatting";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -48,11 +49,13 @@ const STATUS_LIST = [
   "Cancelado",
 ];
 
+const hoje = () => new Date().toISOString().split("T")[0];
+
 export function RelatorioPage() {
   const { profile } = useAuth();
   const [filters, setFilters] = useState({
-    dataInicio: "2026-08-01",
-    dataFim: "2026-08-12",
+    dataInicio: hoje(),
+    dataFim: hoje(),
     usuarioId: "Todos",
     pranchaId: "Todos",
     frenteId: "Todas",
@@ -135,8 +138,8 @@ export function RelatorioPage() {
 
   const clearFilters = () => {
     setFilters({
-      dataInicio: "2026-08-01",
-      dataFim: "2026-08-12",
+      dataInicio: hoje(),
+      dataFim: hoje(),
       usuarioId: "Todos",
       pranchaId: "Todos",
       frenteId: "Todas",
@@ -409,6 +412,7 @@ export function RelatorioPage() {
                     <th className="p-4 font-black uppercase tracking-wider">Frente / Destino</th>
 
                     <th className="p-4 font-black uppercase tracking-wider">Solicitante</th>
+                    <th className="p-4 font-black uppercase tracking-wider text-right">Duração</th>
                     <th className="p-4 font-black uppercase tracking-wider text-right">Status</th>
                   </tr>
                 </thead>
@@ -454,6 +458,9 @@ export function RelatorioPage() {
                         </td>
 
                         <td className="p-4 font-medium">{res.solicitanteNome}</td>
+                        <td className="p-4 text-right font-bold">
+                          {formatarDuracao(calcularDuracaoOperacao(res))}
+                        </td>
                         <td className="p-4 text-right">
                           <StatusBadge status={res.status} />
                         </td>

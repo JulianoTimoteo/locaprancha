@@ -2,23 +2,54 @@
   "name": "Locaprancha",
   "short_name": "Locaprancha",
   "description": "Sistema de Gestão de Frota e Pranchas - Usina Pitangueiras",
+  "id": "/locaprancha/",
   "start_url": "/locaprancha/",
+  "scope": "/locaprancha/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#40800c",
-  "orientation": "portrait",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "/locaprancha/logo-pitangueiras.png",
+      "src": "/locaprancha/pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/locaprancha/logo-pitangueiras.png",
+      "src": "/locaprancha/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/locaprancha/pwa-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/locaprancha/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Agenda",
+      "short_name": "Agenda",
+      "url": "/locaprancha/?view=reservas",
+      "icons": [{ "src": "/locaprancha/pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Frota",
+      "short_name": "Frota",
+      "url": "/locaprancha/?view=pranchas",
+      "icons": [{ "src": "/locaprancha/pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

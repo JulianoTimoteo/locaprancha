@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, X } from "lucide-react";
+import { Download, Plus, Share, X } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -17,36 +17,60 @@ export function PWAInstallPrompt() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Detect iOS
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    // Detect iOS (Safari no iPhone/iPad/iPod). O Safari iOS não dispara
+    // 'beforeinstallprompt', então o banner exibe o passo a passo manual.
+    const isIOSDevice =
+      (/iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as any).MSStream) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     setIsIOS(isIOSDevice);
+
+    // Detecta modo standalone (já instalado como app) — inclui iOS
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone === true;
+
+    if (isStandalone) {
+      setIsVisible(false);
+      return;
+    }
 
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later.
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setIsVisible(true);
+      console.log("PWA install prompt visibility set to true");
+    };
 
-      // Check if already installed
-      if (!window.matchMedia("(display-mode: standalone)").matches) {
-        setIsVisible(true);
-        console.log("PWA install prompt visibility set to true");
-      }
+    const handleAppInstalled = () => {
+      console.log("PWA installed");
+      setIsVisible(false);
+      setDeferredPrompt(null);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
-    // If it's iOS and not standalone, show instructions
-    if (isIOSDevice && !window.matchMedia("(display-mode: standalone)").matches) {
-      // Check if we already showed it this session
-      const hasDismissed = localStorage.getItem("pwa_prompt_dismissed");
-      if (!hasDismissed) {
-        setIsVisible(true);
+    // If it's iOS and not standalone, show instructions.
+    // Re-exibe a cada 3 dias (mesmo se o usuário fechar antes), até instalar.
+    if (isIOSDevice) {
+      const dismissedAt = localStorage.getItem("pwa_prompt_dismissed_at");
+      const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+      const shouldShow = !dismissedAt || Date.now() - Number(dismissedAt) > THREE_DAYS;
+      if (shouldShow) {
+        const t = setTimeout(() => setIsVisible(true), 1500);
+        return () => {
+          clearTimeout(t);
+          window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+          window.removeEventListener("appinstalled", handleAppInstalled);
+        };
       }
     }
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -67,7 +91,7 @@ export function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem("pwa_prompt_dismissed", "true");
+    localStorage.setItem("pwa_prompt_dismissed_at", String(Date.now()));
   };
 
   if (!isVisible) return null;
@@ -104,11 +128,34 @@ export function PWAInstallPrompt() {
 
         <div className="mt-4 pt-4 border-t border-primary/10">
           {isIOS ? (
-            <div className="text-[10px] font-bold text-primary flex items-center gap-2 justify-center bg-primary/5 p-2 rounded-lg">
-              <span>
-                Toque em <span className="underline italic">Compartilhar</span> e depois em{" "}
-                <span className="underline italic">Adicionar à Tela de Início</span>
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-start gap-3 bg-primary/5 p-3 rounded-xl border border-primary/15">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+                  <Share size={14} />
+                </div>
+                <p className="text-[11px] font-bold text-foreground leading-snug">
+                  Toque no botão{" "}
+                  <span className="text-primary underline decoration-2 underline-offset-2">
+                    Compartilhar
+                  </span>{" "}
+                  na barra do Safari.
+                </p>
+              </div>
+              <div className="flex items-start gap-3 bg-primary/5 p-3 rounded-xl border border-primary/15">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+                  <Plus size={14} />
+                </div>
+                <p className="text-[11px] font-bold text-foreground leading-snug">
+                  Role a lista e selecione{" "}
+                  <span className="text-primary underline decoration-2 underline-offset-2">
+                    "Adicionar à Tela de Início"
+                  </span>
+                  .
+                </p>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-semibold text-center pt-1">
+                O app abrirá em tela cheia, sem a barra do navegador.
+              </p>
             </div>
           ) : (
             <Button

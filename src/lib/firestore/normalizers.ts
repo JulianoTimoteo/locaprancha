@@ -8,6 +8,7 @@ import {
   Reserva,
   StatusFrota,
 } from "@/types";
+import { isFirestoreHash } from "./agendaNormalizer";
 
 /**
  * Normaliza o Role do usuário para garantir que seja um valor válido do enum UserRole
@@ -34,7 +35,8 @@ export function normalizeString(val: any, fallback: string = ""): string {
 export function normalizeFrotaStatus(status: any): StatusFrota {
   const s = normalizeString(status).toUpperCase();
   if (s.includes("DISP")) return "DISPONÍVEL";
-  if (s.includes("ALOC") || s.includes("OCUP")) return "ALOCADO";
+  if (s.includes("ALOC") || s.includes("OCUP") || s.includes("EM_USO") || s.includes("EM OPERA"))
+    return "ALOCADO";
   if (s.includes("MANU") || s.includes("OFIC")) return "OFICINA";
   return "DISPONÍVEL";
 }
@@ -43,9 +45,11 @@ export function normalizeFrotaStatus(status: any): StatusFrota {
  * Normaliza um documento de Frota
  */
 export function normalizeFrota(id: string, data: any): Frota {
+  const valorFrota = normalizeString(data.frota || data.numero || "");
+  const numeroLegivel = valorFrota && !isFirestoreHash(valorFrota) ? valorFrota : "";
   return {
     id,
-    frota: data.frota || data.numero || id,
+    frota: numeroLegivel,
     placa: data.placa || "",
     marca: data.marca || "",
     modelo: data.modelo || "",

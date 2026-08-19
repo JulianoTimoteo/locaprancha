@@ -130,96 +130,100 @@ export function FrenteList() {
       </div>
 
       <div className="border rounded-xl bg-card overflow-hidden shadow-md">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="font-black text-xs uppercase w-[120px]">Código</TableHead>
-              <TableHead className="font-black text-xs uppercase">Nome</TableHead>
-              <TableHead className="font-black text-xs uppercase">Responsável</TableHead>
-              <TableHead className="font-black text-xs uppercase w-[150px]">Status</TableHead>
-              <TableHead className="font-black text-xs uppercase text-right w-[150px]">
-                Ações
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginated.map((frente) => (
-              <TableRow key={frente.id} className="hover:bg-muted/10 transition-colors">
-                <TableCell className="font-black text-primary uppercase">{frente.codigo}</TableCell>
-                <TableCell className="font-bold flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  {frente.nome}
-                </TableCell>
-                <TableCell className="font-medium text-sm">{frente.responsavel || "-"}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={frente.status === "ATIVA" ? "default" : "secondary"}
-                    className={`font-black text-[10px] px-2 py-0.5 rounded-full ${
-                      frente.status === "ATIVA" ? "bg-emerald-500 hover:bg-emerald-600" : ""
-                    }`}
-                  >
-                    {frente.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-8 px-2 font-black text-[10px] uppercase gap-1 ${
-                        frente.status === "ATIVA"
-                          ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                          : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                      }`}
-                      onClick={() => {
-                        const newStatus = frente.status === "ATIVA" ? "INATIVA" : "ATIVA";
-                        updateFrente(frente.id, { status: newStatus as "ATIVA" | "INATIVA" });
-                      }}
-                    >
-                      {frente.status === "ATIVA" ? "Desativar" : "Ativar"}
-                    </Button>
-
-                    {isAdmin && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleOpenForm(frente)}
-                        >
-                          <Edit2 size={16} />
-                          <span className="sr-only">Editar frente {frente.nome}</span>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
-                            if (confirm("Excluir frente?")) deleteFrente(frente.id);
-                          }}
-                          aria-label={`Excluir frente ${frente.nome}`}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="h-40 text-center text-muted-foreground font-medium italic"
-                >
-                  Nenhuma frente cadastrada ou encontrada.
-                </TableCell>
+                <TableHead className="font-black text-xs uppercase w-[120px]">Código</TableHead>
+                <TableHead className="font-black text-xs uppercase">Nome</TableHead>
+                <TableHead className="font-black text-xs uppercase">Responsável</TableHead>
+                <TableHead className="font-black text-xs uppercase w-[150px]">Status</TableHead>
+                <TableHead className="font-black text-xs uppercase text-right w-[150px]">
+                  Ações
+                </TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginated.map((frente) => (
+                <TableRow key={frente.id} className="hover:bg-muted/10 transition-colors">
+                  <TableCell className="font-black text-primary uppercase">
+                    {frente.codigo}
+                  </TableCell>
+                  <TableCell className="font-bold flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                    {frente.nome}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">{frente.responsavel || "-"}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={frente.status === "ATIVA" ? "default" : "secondary"}
+                      className={`font-black text-[10px] px-2 py-0.5 rounded-full ${
+                        frente.status === "ATIVA" ? "bg-emerald-500 hover:bg-emerald-600" : ""
+                      }`}
+                    >
+                      {frente.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 px-2 font-black text-[10px] uppercase gap-1 ${
+                          frente.status === "ATIVA"
+                            ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                            : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        }`}
+                        onClick={() => {
+                          const newStatus = frente.status === "ATIVA" ? "INATIVA" : "ATIVA";
+                          updateFrente(frente.id, { status: newStatus as "ATIVA" | "INATIVA" });
+                        }}
+                      >
+                        {frente.status === "ATIVA" ? "Desativar" : "Ativar"}
+                      </Button>
+
+                      {isAdmin && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleOpenForm(frente)}
+                          >
+                            <Edit2 size={16} />
+                            <span className="sr-only">Editar frente {frente.nome}</span>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                              if (confirm("Excluir frente?")) deleteFrente(frente.id);
+                            }}
+                            aria-label={`Excluir frente ${frente.nome}`}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="h-40 text-center text-muted-foreground font-medium italic"
+                  >
+                    Nenhuma frente cadastrada ou encontrada.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {filtered.length > pageSize && (

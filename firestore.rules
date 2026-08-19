@@ -5,193 +5,234 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ============================================================
-    // HELPERS
+    // IDENTIDADE E FUNÇÕES AUXILIARES
     // ============================================================
 
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // SEC-03: Conta bloqueada deve perder privilégios IMEDIATAMENTE
     function userExists() {
       return isAuthenticated()
-        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
-        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.status == "ATIVO";
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
     }
 
     function getUserData() {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
     }
 
+    // ============================================================
+    // PERFIL / ROLE (Compatibilidade total com banco legado)
+    // ============================================================
+
     function hasRole(role) {
       return userExists() && (
-        getUserData().role == role ||
-        getUserData().perfil == role ||
-        getUserData().access_level == role ||
-        getUserData().nivelAcesso == role
+        (getUserData().keys().hasAny(['role']) && getUserData().role == role) ||
+        (getUserData().keys().hasAny(['perfil']) && getUserData().perfil == role) ||
+        (getUserData().keys().hasAny(['access_level']) && getUserData().access_level == role) ||
+        (getUserData().keys().hasAny(['nivelAcesso']) && getUserData().nivelAcesso == role) ||
+        (getUserData().keys().hasAny(['funcao']) && getUserData().funcao == role)
       );
     }
 
     function isGod() {
-      return hasRole('GOD');
+      return hasRole('GOD') || hasRole('god');
     }
 
     function isAdmin() {
-      return isGod() || hasRole('ADMINISTRADOR');
+      return isGod() 
+        || hasRole('ADMINISTRADOR') 
+        || hasRole('ADMIN') 
+        || hasRole('admin');
     }
 
     function isLider() {
-      return hasRole('LIDER');
+      return hasRole('LIDER') || hasRole('lider') || hasRole('FRENTE') || hasRole('frente');
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && userId == request.auth.uid;
+    function isSolicitante() {
+      return hasRole('SOLICITANTE') || hasRole('solicitante');
     }
 
-    function canAccessTab(tabId) {
-      return isGod() || (
-        userExists() && 
-        getUserData().permissions != null && 
-        tabId in getUserData().permissions
+    function isMotorista() {
+      return hasRole('MOTORISTA') || hasRole('motorista') || hasRole('PRANCHA') || hasRole('prancha');
+    }
+
+    function isOwnUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================================
+    // PERMISSÕES DE ABAS / MÓDULOS (ARRAY)
+    // ============================================================
+
+    function hasPermission(permission) {
+      return userExists() 
+        && getUserData().keys().hasAny(['permissions'])
+        && getUserData().permissions is list
+        && getUserData().permissions.hasAny([permission]);
+    }
+
+    // GOD e ADMIN possuem acesso total por padrão às abas.
+    function canAccess(permission) {
+      return isAdmin() || hasPermission(permission);
+    }
+
+    // ============================================================
+    // PROTEÇÃO CONTRA PROMOÇÃO/ALTERAÇÃO INDEVIDA DE GOD
+    // ============================================================
+
+    function creatingGod() {
+      return request.resource.data.role in ['GOD', 'god']
+        || request.resource.data.perfil in ['GOD', 'god']
+        || request.resource.data.access_level in ['GOD', 'god']
+        || request.resource.data.nivelAcesso in ['GOD', 'god'];
+    }
+
+    function changingToGod() {
+      return request.resource.data.role in ['GOD', 'god']
+        || request.resource.data.perfil in ['GOD', 'god']
+        || request.resource.data.access_level in ['GOD', 'god']
+        || request.resource.data.nivelAcesso in ['GOD', 'god'];
+    }
+
+    function existingUserIsGod(userId) {
+      return exists(/databases/$(database)/documents/usuarios/$(userId))
+      && (
+        get(/databases/$(database)/documents/usuarios/$(userId)).data.role in ['GOD', 'god']
+        || get(/databases/$(database)/documents/usuarios/$(userId)).data.perfil in ['GOD', 'god']
+        || get(/databases/$(database)/documents/usuarios/$(userId)).data.access_level in ['GOD', 'god']
+        || get(/databases/$(database)/documents/usuarios/$(userId)).data.nivelAcesso in ['GOD', 'god']
       );
     }
 
     // ============================================================
-    // USUÁRIOS (SEC-05, SEC-06, SEC-26)
+    // COLEÇÃO: USUÁRIOS (/usuarios)
     // ============================================================
+
+    // Permite lookup de nickname para LOGIN (consulta não autenticada, limitada a 10 docs)
+    function isPublicNicknameLookup() {
+      return request.auth == null
+        && request.method == 'list'
+        && request.query != null
+        && request.query.limit != null
+        && request.query.limit <= 10;
+    }
 
     match /usuarios/{userId} {
-      allow list: if true;
-      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
-      
-      allow create: if isGod() || (
-        isAdmin() && 
-        request.resource.data.role != 'GOD'
+      allow read: if (isAuthenticated() && (isOwnUser(userId) || isAdmin()))
+        || isPublicNicknameLookup();
+
+      allow create: if isAuthenticated() && (
+        (isAdmin() && (isGod() || !creatingGod())) ||
+        isOwnUser(userId) // Permite auto-cadastro inicial do usuário
       );
 
-      allow update: if isGod() || (
-        isAdmin() && 
-        resource.data.role != 'GOD' && 
-        request.resource.data.role != 'GOD' &&
-        // SEC-05: Usuário não pode alterar seu próprio privilégio
-        userId != request.auth.uid
+      // O próprio usuário pode atualizar APENAS dados de identidade/sessão
+      // (ultimoAcesso/uid/email) — usado pelo fluxo de login.
+      // Qualquer alteração de privilégio permanece exclusiva de admins.
+      allow update: if (
+        (isOwnUser(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ultimoAcesso', 'uid', 'email']))
+      ) || (
+        isAdmin() && (isGod() || (!existingUserIsGod(userId) && !changingToGod()))
       );
-      
+
       allow delete: if isGod();
     }
 
     // ============================================================
-    // FROTAS / PRANCHAS (SEC-31)
+    // COLEÇÃO: FROTAS / PRANCHAS (/frotas e /frota)
     // ============================================================
 
+    // Regra unificada para lidar com /frotas e /frota no singular
     match /frotas/{frotaId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isLider() || canAccessTab('pranchas');
+      allow create, update: if isAdmin() || isLider() || isMotorista() || canAccess('pranchas');
+      allow delete: if isAdmin();
     }
 
-    // ============================================================
-    // FRENTES
-    // ============================================================
-
-    match /frentes/{frenteId} {
+    match /frota/{frotaId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isLider() || canAccessTab('frentes');
+      allow create, update: if isAdmin() || isLider() || isMotorista() || canAccess('pranchas');
+      allow delete: if isAdmin();
     }
 
     // ============================================================
-    // EQUIPAMENTOS
+    // COLEÇÃO: FRENTES (/frentes)
     // ============================================================
 
-    match /equipamentos/{equipId} {
+    match /frentes/{id} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isLider() || canAccessTab('equipamentos');
+      allow create, update: if isAdmin() || isLider() || canAccess('frentes');
+      allow delete: if isAdmin();
     }
 
     // ============================================================
-    // AGENDA / RESERVAS (SEC-07, SEC-08, SEC-09, SEC-10, SEC-11, SEC-12, SEC-13, SEC-14)
+    // COLEÇÃO: EQUIPAMENTOS (/equipamentos)
+    // ============================================================
+
+    match /equipamentos/{id} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isLider() || canAccess('equipamentos');
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // COLEÇÃO: AGENDA (/agenda)
     // ============================================================
 
     match /agenda/{reservaId} {
-      // SEC-18: Leitura restrita por perfil (MOTORISTA/SOLICITANTE vêm apenas o seu)
-      allow read: if isAuthenticated() && (
+      allow read: if isAuthenticated();
+
+      // Permitir agendamento por Admins, Líderes, Solicitantes ou com permissão explícita
+      allow create: if isAuthenticated() && (
+        isAdmin() || isLider() || isSolicitante() || canAccess('reservas')
+      );
+
+      // Permite atualização se for Admin, Líder, Motorista da corrida ou com permissão
+      allow update: if isAuthenticated() && (
         isAdmin() || 
         isLider() || 
+        isMotorista() || 
+        canAccess('reservas') ||
         resource.data.solicitanteId == request.auth.uid ||
-        resource.data.motoristaId == request.auth.uid ||
-        resource.data.userId == request.auth.uid
+        resource.data.criadoPorUid == request.auth.uid
       );
-      
-      // SEC-09, SEC-10: Impedir fraude de identidade e reserva pré-aprovada
-      allow create: if isAuthenticated() && canAccessTab('reservas')
-        && request.resource.data.solicitanteId == request.auth.uid
-        && (request.resource.data.status == "Pendente" || request.resource.data.status == "Agendado")
-        && !request.resource.data.keys().hasAny(['aprovadoPor', 'aprovadoEm', 'dataAprovacao']);
 
-      allow update: if isAuthenticated() && canAccessTab('reservas') && (
-        // SEC-14: Proteção contra manipulação de campos (affectedKeys)
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status', 'updatedAt', 'aprovadoEm', 'aprovadoPor', 
-          'iniciadoEm', 'iniciadoPor', 'horarioInicioReal',
-          'finalizadoEm', 'finalizadoPor', 'horarioFimReal',
-          'relatorio', 'motivoRecusa', 'motoristaId', 'motoristaNome'
-        ]) &&
-        // SEC-09: Proteção contra falsificação de identidade
-        request.resource.data.solicitanteId == resource.data.solicitanteId &&
-        // SEC-11, SEC-12, SEC-13: Proteção de fluxo de aprovação e campos administrativos
-        ((request.resource.data.status == "Aprovado" && resource.data.status != "Aprovado") 
-          ? (isAdmin() && resource.data.solicitanteId != request.auth.uid)
-          : (request.resource.data.status == resource.data.status || 
-             request.resource.data.status == "Cancelado" || 
-             isAdmin() || isLider())) &&
-        // Bloquear alteração de quem aprovou/quando aprovou por usuários comuns
-        (request.resource.data.aprovadoPor == resource.data.aprovadoPor || isAdmin()) &&
-        (request.resource.data.aprovadoEm == resource.data.aprovadoEm || isAdmin())
-      );
-      
       allow delete: if isAdmin();
     }
 
     // ============================================================
-    // RELATÓRIOS (SEC-33)
+    // COLEÇÃO: RELATÓRIOS (/relatorios)
     // ============================================================
 
     match /relatorios/{relatorioId} {
-      allow read: if isAuthenticated() && canAccessTab('relatorios');
-      allow create: if isAuthenticated() && canAccessTab('relatorios') 
-        && request.resource.data.usuarioId == request.auth.uid;
-      allow update: if isAuthenticated() && (isAdmin() || (canAccessTab('relatorios') && resource.data.usuarioId == request.auth.uid));
+      allow read: if isAuthenticated() && (canAccess('relatorios') || isLider());
+
+      allow create: if isAuthenticated() && (canAccess('relatorios') || isLider());
+
+      allow update: if isAuthenticated() && (
+        isAdmin() || (canAccess('relatorios') && resource.data.userId == request.auth.uid)
+      );
+
       allow delete: if isAdmin();
     }
 
     // ============================================================
-    // NOTIFICAÇÕES (SEC-30)
+    // COLEÇÃO: AUDITORIA (/audit_logs)
     // ============================================================
 
-    match /notificacoes/{notifId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
+      allow update, delete: if false; // Logs são estritamente imutáveis
     }
 
     // ============================================================
-    // CONFIGURAÇÕES / SISTEMA (SEC-29)
+    // BLOQUEIO PADRÃO
     // ============================================================
 
-    match /configuracoes/{configId} {
-      allow read: if isAuthenticated();
-      allow write: if isGod();
-    }
-    
-    match /system_tests/{testId} {
-      allow read, write: if isGod();
-    }
-
-    match /system_test_steps/{stepId} {
-      allow read, write: if isGod();
-    }
-
-    // SEC-27: Princípio de Deny by Default
     match /{document=**} {
       allow read, write: if false;
     }

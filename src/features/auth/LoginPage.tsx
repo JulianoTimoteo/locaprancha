@@ -142,7 +142,7 @@ export function LoginPage() {
 
       try {
         console.log("[LOGIN] Executando autoMigrateProfile...");
-        await autoMigrateProfile(user);
+        await autoMigrateProfile(user, email);
         console.log("[LOGIN] autoMigrateProfile concluído");
 
         console.log("[LOGIN] Atualizando último acesso...");

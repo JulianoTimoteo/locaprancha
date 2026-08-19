@@ -9,15 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Frota, StatusFrota } from "@/types";
+import { Frota } from "@/types";
 import { useFleet } from "./useFleet";
 import { toast } from "sonner";
 import { Truck } from "lucide-react";
@@ -39,8 +31,6 @@ export function FrotaForm({ open, onOpenChange, frotaToEdit }: FrotaFormProps) {
     modelo: "",
     nome: "",
     tipo: "",
-    status: "DISPONÍVEL" as StatusFrota,
-    justificativaManutencao: "",
   });
 
   useEffect(() => {
@@ -52,8 +42,6 @@ export function FrotaForm({ open, onOpenChange, frotaToEdit }: FrotaFormProps) {
         modelo: frotaToEdit.modelo,
         nome: frotaToEdit.nome,
         tipo: frotaToEdit.tipo,
-        status: frotaToEdit.status,
-        justificativaManutencao: frotaToEdit.justificativaManutencao || "",
       });
     } else {
       setFormData({
@@ -63,8 +51,6 @@ export function FrotaForm({ open, onOpenChange, frotaToEdit }: FrotaFormProps) {
         modelo: "",
         nome: "",
         tipo: "",
-        status: "DISPONÍVEL",
-        justificativaManutencao: "",
       });
     }
   }, [frotaToEdit, open]);
@@ -83,17 +69,15 @@ export function FrotaForm({ open, onOpenChange, frotaToEdit }: FrotaFormProps) {
       return;
     }
 
-    if (formData.status === "OFICINA" && !formData.justificativaManutencao) {
-      toast.error("A justificativa de manutenção é obrigatória para o status OFICINA");
-      return;
-    }
-
     setLoading(true);
     try {
       if (frotaToEdit) {
+        // Edição: NÃO envia status — o status operacional é controlado
+        // automaticamente pelo sistema (DISPONÍVEL/ALOCADO/OFICINA).
         await updateFrota(frotaToEdit.id, formData);
       } else {
-        await addFrota(formData);
+        // Cadastro: toda frota nova nasce DISPONÍVEL (status automático).
+        await addFrota({ ...formData, status: "DISPONÍVEL" });
       }
       onOpenChange(false);
     } catch (error) {
@@ -184,60 +168,21 @@ export function FrotaForm({ open, onOpenChange, frotaToEdit }: FrotaFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                Tipo/Frota (Tipo da Frota)
-              </label>
-              <Input
-                placeholder="31220"
-                value={formData.tipo}
-                onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                className="font-medium"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                Status Operacional *
-              </label>
-              <Select
-                value={formData.status}
-                onValueChange={(v: StatusFrota) => setFormData({ ...formData, status: v })}
-              >
-                <SelectTrigger className="font-bold uppercase">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DISPONÍVEL" className="font-bold text-green-600">
-                    🟢 DISPONÍVEL
-                  </SelectItem>
-                  <SelectItem value="ALOCADO" className="font-bold text-yellow-600">
-                    🟡 ALOCADO
-                  </SelectItem>
-                  <SelectItem value="OFICINA" className="font-bold text-red-600">
-                    🔴 OFICINA
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+              Tipo/Frota (Tipo da Frota)
+            </label>
+            <Input
+              placeholder="31220"
+              value={formData.tipo}
+              onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+              className="font-medium"
+            />
+            <p className="text-[9px] text-muted-foreground font-medium italic">
+              O status operacional (DISPONÍVEL / ALOCADO / OFICINA) é controlado automaticamente
+              pelo sistema.
+            </p>
           </div>
-
-          {formData.status === "OFICINA" && (
-            <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                Justificativa de Manutenção *
-              </label>
-              <Textarea
-                placeholder="Ex: Preventiva, Corretiva, Pneus..."
-                value={formData.justificativaManutencao}
-                onChange={(e) =>
-                  setFormData({ ...formData, justificativaManutencao: e.target.value })
-                }
-                className="font-medium"
-              />
-            </div>
-          )}
 
           <DialogFooter className="pt-4 gap-2">
             <Button

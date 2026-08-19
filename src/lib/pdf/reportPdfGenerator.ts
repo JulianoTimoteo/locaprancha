@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { calcularDuracaoOperacao, formatarDuracao } from "@/lib/utils/reservaFormatting";
 
 interface OperationalReportData {
   titulo: string;
@@ -144,16 +145,19 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     op.data || "N/A",
     op.hora || op.horarioRetirada || "N/A",
     op.pranchaId || "N/A",
-    op.frenteId || "N/A",
+    op.frenteTrabalho || op.frenteId || "N/A",
     op.solicitanteNome || "N/A",
     op.origem || "N/A",
     op.destino || "N/A",
+    formatarDuracao(calcularDuracaoOperacao(op)),
     op.status || "N/A",
   ]);
 
   autoTable(doc, {
     startY: currentY + 5,
-    head: [["Data", "Hora", "Frota", "Frente", "Usuário", "Origem", "Destino", "Status"]],
+    head: [
+      ["Data", "Hora", "Frota", "Frente", "Usuário", "Origem", "Destino", "Duração", "Status"],
+    ],
     body: tableRows,
     theme: "grid",
     headStyles: {
@@ -168,14 +172,15 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
       textColor: [50, 50, 50],
     },
     columnStyles: {
-      0: { cellWidth: 15 },
+      0: { cellWidth: 18 },
       1: { cellWidth: 12 },
-      2: { cellWidth: 15 },
-      3: { cellWidth: 20 },
-      4: { cellWidth: 25 },
-      5: { cellWidth: 30 },
-      6: { cellWidth: 30 },
-      7: { cellWidth: 20 },
+      2: { cellWidth: 14 },
+      3: { cellWidth: 22 },
+      4: { cellWidth: 22 },
+      5: { cellWidth: 24 },
+      6: { cellWidth: 24 },
+      7: { cellWidth: 18 },
+      8: { cellWidth: 18 },
     },
     margin: { top: 40, bottom: 20 },
     didDrawPage: (data) => {

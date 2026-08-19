@@ -210,105 +210,107 @@ export function EquipamentoList() {
       </div>
 
       <div className="border rounded-xl bg-card overflow-hidden shadow-md">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="font-black text-xs uppercase w-[120px]">Código</TableHead>
-              <TableHead className="font-black text-xs uppercase">Descrição</TableHead>
-              <TableHead className="font-black text-xs uppercase">Grupo / Frente</TableHead>
-              <TableHead className="font-black text-xs uppercase w-[150px]">Status</TableHead>
-              <TableHead className="font-black text-xs uppercase text-right w-[150px]">
-                Ações
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginated.map((item) => (
-              <TableRow key={item.id} className="hover:bg-muted/10 transition-colors">
-                <TableCell className="font-black text-primary uppercase">{item.codigo}</TableCell>
-                <TableCell className="font-bold flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-muted-foreground" />
-                  {item.nome}
-                </TableCell>
-                <TableCell className="font-medium text-sm">
-                  <div className="flex flex-col">
-                    <span>{item.tipo}</span>
-                    {item.frenteId && (
-                      <span className="text-[10px] text-muted-foreground font-black uppercase">
-                        {frentes.find((f) => f.id === item.frenteId)?.nome || item.frenteId}
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={item.status === "DISPONÍVEL" ? "default" : "secondary"}
-                    className={`font-black text-[10px] px-2 py-0.5 rounded-full ${
-                      item.status === "DISPONÍVEL" ? "bg-emerald-500 hover:bg-emerald-600" : ""
-                    }`}
-                  >
-                    {item.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-8 px-2 font-black text-[10px] uppercase gap-1 ${
-                        item.status === "DISPONÍVEL"
-                          ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                          : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                      }`}
-                      onClick={() => {
-                        const newStatus = item.status === "DISPONÍVEL" ? "EM_USO" : "DISPONÍVEL";
-                        updateEquipamento(item.id, { status: newStatus as any });
-                      }}
-                    >
-                      {item.status === "DISPONÍVEL" ? "Ocupar" : "Liberar"}
-                    </Button>
-
-                    {isAdmin && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleOpenForm(item)}
-                        >
-                          <Edit2 size={16} />
-                          <span className="sr-only">Editar equipamento {item.codigo}</span>
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
-                            if (confirm("Excluir equipamento?")) deleteEquipamento(item.id);
-                          }}
-                          aria-label={`Excluir equipamento ${item.codigo}`}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="h-40 text-center text-muted-foreground font-medium italic"
-                >
-                  Nenhum equipamento cadastrado ou encontrado.
-                </TableCell>
+                <TableHead className="font-black text-xs uppercase w-[120px]">Código</TableHead>
+                <TableHead className="font-black text-xs uppercase">Descrição</TableHead>
+                <TableHead className="font-black text-xs uppercase">Grupo / Frente</TableHead>
+                <TableHead className="font-black text-xs uppercase w-[150px]">Status</TableHead>
+                <TableHead className="font-black text-xs uppercase text-right w-[150px]">
+                  Ações
+                </TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginated.map((item) => (
+                <TableRow key={item.id} className="hover:bg-muted/10 transition-colors">
+                  <TableCell className="font-black text-primary uppercase">{item.codigo}</TableCell>
+                  <TableCell className="font-bold flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-muted-foreground" />
+                    {item.nome}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    <div className="flex flex-col">
+                      <span>{item.tipo}</span>
+                      {item.frenteId && (
+                        <span className="text-[10px] text-muted-foreground font-black uppercase">
+                          {frentes.find((f) => f.id === item.frenteId)?.nome || "Frente não mapeada"}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={item.status === "DISPONÍVEL" ? "default" : "secondary"}
+                      className={`font-black text-[10px] px-2 py-0.5 rounded-full ${
+                        item.status === "DISPONÍVEL" ? "bg-emerald-500 hover:bg-emerald-600" : ""
+                      }`}
+                    >
+                      {item.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 px-2 font-black text-[10px] uppercase gap-1 ${
+                          item.status === "DISPONÍVEL"
+                            ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                            : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        }`}
+                        onClick={() => {
+                          const newStatus = item.status === "DISPONÍVEL" ? "EM_USO" : "DISPONÍVEL";
+                          updateEquipamento(item.id, { status: newStatus as any });
+                        }}
+                      >
+                        {item.status === "DISPONÍVEL" ? "Ocupar" : "Liberar"}
+                      </Button>
+
+                      {isAdmin && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleOpenForm(item)}
+                          >
+                            <Edit2 size={16} />
+                            <span className="sr-only">Editar equipamento {item.codigo}</span>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                              if (confirm("Excluir equipamento?")) deleteEquipamento(item.id);
+                            }}
+                            aria-label={`Excluir equipamento ${item.codigo}`}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="h-40 text-center text-muted-foreground font-medium italic"
+                  >
+                    Nenhum equipamento cadastrado ou encontrado.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
       {filtered.length > pageSize && (
         <div className="flex items-center justify-between px-1 pt-2">
