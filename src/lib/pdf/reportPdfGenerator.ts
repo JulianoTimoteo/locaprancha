@@ -30,7 +30,7 @@ interface OperationalReportData {
 
 export const generateOperationalReportPdf = (data: OperationalReportData) => {
   const doc = new jsPDF({
-    orientation: "p",
+    orientation: "l",
     unit: "mm",
     format: "a4",
     putOnlyUsedFonts: true,
@@ -76,6 +76,30 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     doc.text(`Página ${pageNum}`, pageWidth - margin, pageHeight - 10, {
       align: "right",
     });
+  };
+
+  const formatObservacao = (op: any): string => {
+    const parts: string[] = [];
+    if (op.observacao) parts.push(op.observacao);
+    const horaInicio = op.hora || op.horarioRetirada || "--:--";
+    parts.push(`Início: ${horaInicio}`);
+    const isFinalizado = ["Finalizado", "Concluído"].includes(op.status);
+    let horaFim = "--:--";
+    if (isFinalizado && op.horarioFimReal) {
+      try {
+        const dateObj =
+          typeof op.horarioFimReal.toDate === "function"
+            ? op.horarioFimReal.toDate()
+            : new Date(op.horarioFimReal);
+        horaFim = format(dateObj, "HH:mm");
+      } catch (e) {
+        horaFim = op.horarioDevolucaoPrevisto || "--:--";
+      }
+    } else if (op.horarioDevolucaoPrevisto) {
+      horaFim = op.horarioDevolucaoPrevisto;
+    }
+    parts.push(`Fim: ${horaFim}`);
+    return parts.join("\n");
   };
 
   // --- Page 1 ---
@@ -150,13 +174,14 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     op.origem || "N/A",
     op.destino || "N/A",
     formatarDuracao(calcularDuracaoOperacao(op)),
+    formatObservacao(op),
     op.status || "N/A",
   ]);
 
   autoTable(doc, {
     startY: currentY + 5,
     head: [
-      ["Data", "Hora", "Frota", "Frente", "Usuário", "Origem", "Destino", "Duração", "Status"],
+      ["Data", "Hora", "Frota", "Frente", "Usuário", "Origem", "Destino", "Duração", "Observações", "Status"],
     ],
     body: tableRows,
     theme: "grid",
@@ -172,15 +197,16 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
       textColor: [50, 50, 50],
     },
     columnStyles: {
-      0: { cellWidth: 18 },
-      1: { cellWidth: 12 },
-      2: { cellWidth: 14 },
-      3: { cellWidth: 22 },
-      4: { cellWidth: 22 },
-      5: { cellWidth: 24 },
-      6: { cellWidth: 24 },
-      7: { cellWidth: 18 },
-      8: { cellWidth: 18 },
+      0: { cellWidth: 20 },
+      1: { cellWidth: 14 },
+      2: { cellWidth: 16 },
+      3: { cellWidth: 24 },
+      4: { cellWidth: 26 },
+      5: { cellWidth: 30 },
+      6: { cellWidth: 30 },
+      7: { cellWidth: 16 },
+      8: { cellWidth: 65 },
+      9: { cellWidth: 22 },
     },
     margin: { top: 40, bottom: 20 },
     didDrawPage: (data) => {
