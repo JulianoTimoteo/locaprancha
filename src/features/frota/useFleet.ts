@@ -127,17 +127,19 @@ export function useFleet() {
       const old = frotas.find((f) => f.id === id);
       if (!old) return;
 
-      // Regra 12: Não permitir ALOCADO -> OFICINA se serviço em andamento
-      // Nota: Esta verificação idealmente consultaria a coleção de serviços/reservas.
-      // Como não temos a consulta aqui, faremos a verificação baseada no status local por enquanto,
-      // mas o ideal é que a interface previna isso ou use uma transaction.
-
-      const payload = {
+      const payload: any = {
         status: newStatus,
         justificativaManutencao: justificativa || "",
         updatedAt: serverTimestamp(),
         updatedBy: profile?.uid || "unknown",
       };
+
+      if (newStatus === "OFICINA") {
+        payload.oficinaEntradaEm = serverTimestamp();
+        payload.oficinaSaidaEm = null;
+      } else if (old.status === "OFICINA") {
+        payload.oficinaSaidaEm = serverTimestamp();
+      }
 
       await updateDoc(doc(db, "frotas", id), payload);
 

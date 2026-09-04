@@ -57,6 +57,8 @@ export function normalizeFrota(id: string, data: any): Frota {
     tipo: data.tipo || "",
     status: normalizeFrotaStatus(data.status),
     justificativaManutencao: data.justificativaManutencao || "",
+    oficinaEntradaEm: data.oficinaEntradaEm || null,
+    oficinaSaidaEm: data.oficinaSaidaEm || null,
     createdAt: data.createdAt || null,
     createdBy: data.createdBy || "",
     updatedAt: data.updatedAt || null,

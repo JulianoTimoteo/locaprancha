@@ -68,16 +68,37 @@ export function RelatorioPage() {
   const exportPDF = async () => {
     const toastId = toast.loading("Gerando PDF operacional nativo...");
     try {
+      const oficinaEntries = frotas
+        .filter((f) => f.status === "OFICINA" && f.oficinaEntradaEm)
+        .map((f) => ({
+          data: f.oficinaEntradaEm.toDate ? f.oficinaEntradaEm.toDate().toLocaleDateString('pt-BR') : (f.oficinaEntradaEm || "N/A"),
+          hora: f.oficinaEntradaEm.toDate ? f.oficinaEntradaEm.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--',
+          pranchaId: f.frota,
+          solicitanteNome: f.justificativaManutencao?.substring(0, 15) || "Manutencao",
+          duracaoHoras: null,
+          status: "OFICINA",
+        }));
+
+      const emOficina = frotas.filter((f) => f.status === "OFICINA").length;
+
       const reportData = {
         titulo: "RELATÓRIO OPERACIONAL",
         periodoInicio: filters.dataInicio,
         periodoFim: filters.dataFim,
         usuario: {
-          nome: profile?.name || "Usuário não identificado",
+          nome: profile?.name || "Usuario nao identificado",
           nickname: profile?.nickname,
         },
-        resumo: kpis,
+        resumo: {
+          ...kpis,
+          emOficina,
+          totalHoras: kpis.totalHoras,
+          usuariosDistintos: kpis.usuariosDistintos,
+          equipamentosDistintos: kpis.equipamentosDistintos,
+          frentesDistintas: kpis.frentesDistintas,
+        },
         operacoes: filteredData,
+        oficina: oficinaEntries,
       };
 
       const doc = generateOperationalReportPdf(reportData);
@@ -88,7 +109,7 @@ export function RelatorioPage() {
       toast.success("PDF gerado com sucesso!", { id: toastId });
     } catch (e) {
       console.error("PDF_GENERATION_ERROR:", e);
-      toast.error("Não foi possível gerar o PDF. Tente novamente.", { id: toastId });
+      toast.error("Nao foi possivel gerar o PDF. Tente novamente.", { id: toastId });
     }
   };
 

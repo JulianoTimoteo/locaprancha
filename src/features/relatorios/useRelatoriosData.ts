@@ -20,7 +20,7 @@ export function useRelatoriosData(filters: any) {
   useEffect(() => {
     const checkLoaded = () => {
       loadedCount.current += 1;
-      if (loadedCount.current >= 4) setLoading(false);
+      if (loadedCount.current >= 5) setLoading(false);
     };
 
     const unsubAgenda = subscribeToAgenda((data) => {
@@ -126,6 +126,7 @@ export function useRelatoriosData(filters: any) {
       usuariosDistintos,
       equipamentosDistintos,
       frentesDistintas,
+      emOficina: frotas.filter((f) => f.status === "OFICINA").length,
     };
   }, [filteredData]);
 

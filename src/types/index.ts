@@ -26,6 +26,8 @@ export interface Frota {
   tipo: string;
   status: StatusFrota;
   justificativaManutencao?: string;
+  oficinaEntradaEm?: any;
+  oficinaSaidaEm?: any;
   createdAt?: any;
   createdBy?: string;
   updatedAt?: any;
