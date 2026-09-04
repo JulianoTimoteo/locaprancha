@@ -20,17 +20,19 @@ interface OperationalReportData {
     emAndamento: number;
     canceladas: number;
     canceladasPercent: string | number;
+    emOficina: number;
     totalHoras: string | number;
     usuariosDistintos: number;
     equipamentosDistintos: number;
     frentesDistintas: number;
   };
   operacoes: any[];
+  oficina: any[];
 }
 
 export const generateOperationalReportPdf = (data: OperationalReportData) => {
   const doc = new jsPDF({
-    orientation: "l",
+    orientation: "landscape",
     unit: "mm",
     format: "a4",
     putOnlyUsedFonts: true,
@@ -38,200 +40,186 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15;
+  const margin = 10;
 
-  const addHeader = (pageNum: number, totalPages?: number) => {
-    // Top Bar - Primary Green Pitangueiras
-    doc.setFillColor(64, 128, 12); // #40800c
-    doc.rect(0, 0, pageWidth, 20, "F");
+  const addHeader = () => {
+    doc.setFillColor(64, 128, 12);
+    doc.rect(0, 0, pageWidth, 14, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("LOCAPRANCHA", margin, 13);
+    doc.setFontSize(12);
+    doc.text("LOCAPRANCHA", margin, 10);
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text("USINA PITANGUEIRAS", pageWidth - margin, 13, { align: "right" });
+    doc.text("USINA PITANGUEIRAS", pageWidth - margin, 10, { align: "right" });
 
-    // Header Content
     doc.setTextColor(60, 60, 60);
-    doc.setFontSize(14);
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text("RELATÓRIO OPERACIONAL", margin, 32);
+    doc.text("RELATORIO OPERACIONAL", margin, 24);
 
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     const emissionDate = format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR });
-    doc.text(`Emissão: ${emissionDate}`, pageWidth - margin, 32, { align: "right" });
+    doc.text(`Emissao: ${emissionDate}`, pageWidth - margin, 24, { align: "right" });
 
     doc.setDrawColor(200, 200, 200);
-    doc.line(margin, 36, pageWidth - margin, 36);
+    doc.line(margin, 27, pageWidth - margin, 27);
   };
 
   const addFooter = (pageNum: number) => {
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("LOCAPRANCHA — USINA PITANGUEIRAS | Relatório Operacional", margin, pageHeight - 10);
-    doc.text(`Página ${pageNum}`, pageWidth - margin, pageHeight - 10, {
-      align: "right",
-    });
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text("LOCAPRANCHA - USINA PITANGUEIRAS | Relatorio Operacional", margin, pageHeight - 8);
+    doc.text(`Pag ${pageNum}`, pageWidth - margin, pageHeight - 8, { align: "right" });
   };
 
-  const formatObservacao = (op: any): string => {
-    const parts: string[] = [];
-    if (op.observacao) parts.push(op.observacao);
-    const horaInicio = op.hora || op.horarioRetirada || "--:--";
-    parts.push(`Início: ${horaInicio}`);
-    const isFinalizado = ["Finalizado", "Concluído"].includes(op.status);
-    let horaFim = "--:--";
-    if (isFinalizado && op.horarioFimReal) {
-      try {
-        const dateObj =
-          typeof op.horarioFimReal.toDate === "function"
-            ? op.horarioFimReal.toDate()
-            : new Date(op.horarioFimReal);
-        horaFim = format(dateObj, "HH:mm");
-      } catch (e) {
-        horaFim = op.horarioDevolucaoPrevisto || "--:--";
-      }
-    } else if (op.horarioDevolucaoPrevisto) {
-      horaFim = op.horarioDevolucaoPrevisto;
-    }
-    parts.push(`Fim: ${horaFim}`);
-    return parts.join("\n");
-  };
+  addHeader();
 
-  // --- Page 1 ---
-  addHeader(1);
+  let currentY = 31;
 
-  let currentY = 45;
-
-  // Identification
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text("RESPONSÁVEL:", margin, currentY);
+  doc.setTextColor(0, 0, 0);
+  doc.text("RESPONSAVEL:", margin, currentY);
   doc.setFont("helvetica", "normal");
-  doc.text(data.usuario.nome || "Não informado", margin + 30, currentY);
+  doc.setTextColor(60, 60, 60);
+  doc.text(data.usuario.nome || "Nao informado", margin + 30, currentY);
 
   currentY += 5;
   doc.setFont("helvetica", "bold");
-  doc.text("PERÍODO:", margin, currentY);
+  doc.setTextColor(0, 0, 0);
+  doc.text("PERIODO:", margin, currentY);
   doc.setFont("helvetica", "normal");
-  doc.text(`${data.periodoInicio} até ${data.periodoFim}`, margin + 30, currentY);
+  doc.setTextColor(60, 60, 60);
+  doc.text(`${data.periodoInicio} ate ${data.periodoFim}`, margin + 30, currentY);
 
-  currentY += 15;
+  currentY += 10;
 
-  // Resumo Executivo
   doc.setFillColor(245, 245, 245);
-  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 40, 2, 2, "F");
+  doc.roundedRect(margin, currentY, pageWidth - margin * 2, 30, 2, 2, "F");
 
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(64, 128, 12);
-  doc.text("RESUMO OPERACIONAL", margin + 5, currentY + 7);
-
-  doc.setTextColor(60, 60, 60);
-  doc.setFontSize(9);
+  doc.text("RESUMO OPERACIONAL", margin + 3, currentY + 6);
 
   const col1 = margin + 5;
-  const col2 = margin + 65;
-  const col3 = margin + 125;
+  const col2 = margin + 60;
+  const col3 = margin + 120;
 
-  doc.text(`Total de Operações: ${data.resumo.total}`, col1, currentY + 17);
-  doc.text(
-    `Finalizadas: ${data.resumo.finalizadas} (${data.resumo.finalizadasPercent}%)`,
-    col1,
-    currentY + 24,
-  );
-  doc.text(`Em Andamento: ${data.resumo.emAndamento}`, col1, currentY + 31);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
 
-  doc.text(
-    `Canceladas: ${data.resumo.canceladas} (${data.resumo.canceladasPercent}%)`,
-    col2,
-    currentY + 17,
-  );
-  doc.text(`Horas Totais: ${data.resumo.totalHoras}h`, col2, currentY + 24);
-  doc.text(`Usuários: ${data.resumo.usuariosDistintos}`, col2, currentY + 31);
+  doc.text(`Total: ${data.resumo.total}`, col1, currentY + 13);
+  doc.text(`Finalizadas: ${data.resumo.finalizadas} (${data.resumo.finalizadasPercent}%)`, col1, currentY + 18);
+  doc.text(`Em Andamento: ${data.resumo.emAndamento}`, col1, currentY + 23);
+  doc.text(`Canceladas: ${data.resumo.canceladas} (${data.resumo.canceladasPercent}%)`, col2, currentY + 13);
+  doc.text(`Horas: ${data.resumo.totalHoras}h`, col2, currentY + 18);
+  doc.text(`Usuarios: ${data.resumo.usuariosDistintos}`, col2, currentY + 23);
+  doc.text(`Frotas: ${data.resumo.equipamentosDistintos}`, col3, currentY + 13);
+  doc.text(`Frentes: ${data.resumo.frentesDistintas}`, col3, currentY + 18);
 
-  doc.text(`Frotas Atendidas: ${data.resumo.equipamentosDistintos}`, col3, currentY + 17);
-  doc.text(`Frentes: ${data.resumo.frentesDistintas}`, col3, currentY + 24);
+  currentY += 35;
 
-  currentY += 55;
-
-  // Tabela de Operações
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 0, 0);
-  doc.text("DETALHAMENTO DAS OPERAÇÕES", margin, currentY);
+  doc.text("DETALHAMENTO DAS OPERACOES", margin, currentY);
 
   const tableRows = data.operacoes.map((op) => [
-    op.data || "N/A",
-    op.hora || op.horarioRetirada || "N/A",
+    `${op.data || "N/A"} ${op.hora || op.horarioRetirada || "N/A"}`,
     op.pranchaId || "N/A",
     op.frenteTrabalho || op.frenteId || "N/A",
+    `${op.origem || "N/A"} -> ${op.destino || "N/A"}`,
     op.solicitanteNome || "N/A",
-    op.origem || "N/A",
-    op.destino || "N/A",
-    formatarDuracao(calcularDuracaoOperacao(op)),
-    formatObservacao(op),
+    formatarDuracao(calcularDuracaoOperacao(op)) || "N/A",
     op.status || "N/A",
   ]);
 
   autoTable(doc, {
-    startY: currentY + 5,
-    head: [
-      ["Data", "Hora", "Frota", "Frente", "Usuário", "Origem", "Destino", "Duração", "Observações", "Status"],
-    ],
+    startY: currentY + 4,
+    head: [["Data/Hora", "Frota", "Frente", "Origem -> Destino", "Solicitante", "Duracao", "Status"]],
     body: tableRows,
     theme: "grid",
     headStyles: {
       fillColor: [64, 128, 12],
       textColor: [255, 255, 255],
-      fontSize: 8,
+      fontSize: 7.5,
       fontStyle: "bold",
       halign: "center",
+      cellPadding: 1.5,
     },
     bodyStyles: {
       fontSize: 7,
-      textColor: [50, 50, 50],
+      textColor: [0, 0, 0],
+      cellPadding: 1.5,
     },
     columnStyles: {
-      0: { cellWidth: 20 },
-      1: { cellWidth: 14 },
-      2: { cellWidth: 16 },
-      3: { cellWidth: 24 },
+      0: { cellWidth: 24 },
+      1: { cellWidth: 16 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 54 },
       4: { cellWidth: 26 },
-      5: { cellWidth: 30 },
-      6: { cellWidth: 30 },
-      7: { cellWidth: 16 },
-      8: { cellWidth: 65 },
-      9: { cellWidth: 22 },
+      5: { cellWidth: 16 },
+      6: { cellWidth: 18 },
     },
-    margin: { top: 40, bottom: 20 },
+    margin: { left: margin, right: margin },
     didDrawPage: (data) => {
-      // For pages > 1, add header and footer
-      if (data.pageNumber > 1) {
-        addHeader(data.pageNumber);
-      }
-      addFooter(data.pageNumber);
+      addFooter((data.pageNumber as number));
     },
   });
 
-  // Final Summary on last page
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  const lastTableY = (doc as any).lastAutoTable?.finalY || currentY + 40;
 
-  if (finalY < pageHeight - 40) {
-    doc.setFontSize(10);
+  if (data.oficina && data.oficina.length > 0 && lastTableY < pageHeight - 35) {
+    const oficinaY = lastTableY + 8;
+
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.text("RESUMO FINAL", margin, finalY);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `O relatório apresenta um total de ${data.resumo.total} operações no período selecionado.`,
-      margin,
-      finalY + 7,
-    );
+    doc.setTextColor(180, 0, 0);
+    doc.text("FROTA EM OFICINA", margin, oficinaY);
+
+    const oficinaRows = data.oficina.map((op: any) => [
+      `${op.data || "N/A"} ${op.hora || "N/A"}`,
+      op.pranchaId || "N/A",
+      (op.solicitanteNome || "N/A").substring(0, 15),
+      op.duracaoHoras != null ? formatarDuracao(op.duracaoHoras) : "Em andamento",
+      op.status || "OFICINA",
+    ]);
+
+    autoTable(doc, {
+      startY: oficinaY + 4,
+      head: [["Data/Hora", "Frota", "Justificativa", "Tempo", "Status"]],
+      body: oficinaRows,
+      theme: "grid",
+      headStyles: {
+        fillColor: [180, 0, 0],
+        textColor: [255, 255, 255],
+        fontSize: 7,
+        fontStyle: "bold",
+        halign: "center",
+        cellPadding: 1.5,
+      },
+      bodyStyles: {
+        fontSize: 7,
+        textColor: [0, 0, 0],
+        cellPadding: 1.5,
+      },
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 16 },
+        2: { cellWidth: 48 },
+        3: { cellWidth: 28 },
+        4: { cellWidth: 16 },
+      },
+      margin: { left: margin, right: margin },
+      didDrawPage: (data) => {
+        addFooter((data.pageNumber as number));
+      },
+    });
   }
 
   addFooter(1);
