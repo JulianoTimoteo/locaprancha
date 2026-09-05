@@ -189,13 +189,17 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     doc.setTextColor(180, 0, 0);
     doc.text("FROTA EM OFICINA", margin, oficinaY);
 
-    const oficinaRows = data.oficina.map((op: any) => [
-      `${op.data || "N/A"} ${op.hora || "N/A"}`,
-      op.pranchaId || "N/A",
-      (op.solicitanteNome || "N/A").substring(0, 15),
-      op.duracaoHoras != null ? formatarDuracao(op.duracaoHoras) : "Em andamento",
-      op.status || "OFICINA",
-    ]);
+    const oficinaRows = data.oficina
+      .filter((op: any) => op && op.pranchaId)
+      .map((op: any) => [
+        `${op.data || "N/A"} ${op.hora || "N/A"}`,
+        op.pranchaId || "N/A",
+        (op.solicitanteNome || "N/A").substring(0, 15),
+        op.duracaoHoras != null ? formatarDuracao(op.duracaoHoras) : "Em andamento",
+        op.status || "OFICINA",
+      ]);
+    
+    if (oficinaRows.length === 0) return doc;
 
     autoTable(doc, {
       startY: oficinaY + 4,
