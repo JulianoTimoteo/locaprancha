@@ -117,6 +117,11 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   doc.text(`Finalizadas: ${data.resumo.finalizadas} (${data.resumo.finalizadasPercent}%)`, col1, currentY + 18);
   doc.text(`Em Andamento: ${data.resumo.emAndamento}`, col1, currentY + 23);
   doc.text(`Canceladas: ${data.resumo.canceladas} (${data.resumo.canceladasPercent}%)`, col2, currentY + 13);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(180, 0, 0);
+  doc.text(`Em Oficina: ${data.resumo.emOficina}`, col2, currentY + 28);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(0, 0, 0);
   doc.text(`Horas: ${data.resumo.totalHoras}h`, col2, currentY + 18);
   doc.text(`Usuarios: ${data.resumo.usuariosDistintos}`, col2, currentY + 23);
   doc.text(`Frotas: ${data.resumo.equipamentosDistintos}`, col3, currentY + 13);
