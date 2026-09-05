@@ -69,10 +69,10 @@ export function RelatorioPage() {
     const toastId = toast.loading("Gerando PDF operacional nativo...");
     try {
       const oficinaEntries = frotas
-        .filter((f) => f.status === "OFICINA" && f.oficinaEntradaEm)
+        .filter((f) => f.status === "OFICINA")
         .map((f) => ({
-          data: f.oficinaEntradaEm.toDate ? f.oficinaEntradaEm.toDate().toLocaleDateString('pt-BR') : (f.oficinaEntradaEm || "N/A"),
-          hora: f.oficinaEntradaEm.toDate ? f.oficinaEntradaEm.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--',
+          data: f.oficinaEntradaEm?.toDate ? f.oficinaEntradaEm.toDate().toLocaleDateString('pt-BR') : (f.oficinaEntradaEm || "N/A"),
+          hora: f.oficinaEntradaEm?.toDate ? f.oficinaEntradaEm.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--',
           pranchaId: f.frota,
           solicitanteNome: f.justificativaManutencao?.substring(0, 15) || "Manutencao",
           duracaoHoras: null,
