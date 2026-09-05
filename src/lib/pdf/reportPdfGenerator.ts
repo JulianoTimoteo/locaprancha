@@ -116,9 +116,17 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
   doc.setFont("helvetica", "normal");
 
   doc.text(`Total: ${data.resumo.total}`, col1, currentY + 13);
-  doc.text(`Finalizadas: ${data.resumo.finalizadas} (${data.resumo.finalizadasPercent}%)`, col1, currentY + 18);
+  doc.text(
+    `Finalizadas: ${data.resumo.finalizadas} (${data.resumo.finalizadasPercent}%)`,
+    col1,
+    currentY + 18,
+  );
   doc.text(`Em Andamento: ${data.resumo.emAndamento}`, col1, currentY + 23);
-  doc.text(`Canceladas: ${data.resumo.canceladas} (${data.resumo.canceladasPercent}%)`, col2, currentY + 13);
+  doc.text(
+    `Canceladas: ${data.resumo.canceladas} (${data.resumo.canceladasPercent}%)`,
+    col2,
+    currentY + 13,
+  );
   doc.setFont("helvetica", "bold");
   doc.setTextColor(180, 0, 0);
   doc.text(`Em Oficina: ${data.resumo.emOficina}`, col2, currentY + 28);
@@ -148,7 +156,9 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
 
   autoTable(doc, {
     startY: currentY + 4,
-    head: [["Data/Hora", "Frota", "Frente", "Origem -> Destino", "Solicitante", "Duracao", "Status"]],
+    head: [
+      ["Data/Hora", "Frota", "Frente", "Origem -> Destino", "Solicitante", "Duracao", "Status"],
+    ],
     body: tableRows,
     theme: "grid",
     headStyles: {
@@ -168,14 +178,14 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
       0: { cellWidth: 24 },
       1: { cellWidth: 16 },
       2: { cellWidth: 20 },
-      3: { cellWidth: 54 },
+      3: { cellWidth: 40 },
       4: { cellWidth: 26 },
       5: { cellWidth: 16 },
       6: { cellWidth: 18 },
     },
     margin: { left: margin, right: margin },
     didDrawPage: (data) => {
-      addFooter((data.pageNumber as number));
+      addFooter(data.pageNumber as number);
     },
   });
 
@@ -192,18 +202,18 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     const oficinaRows = data.oficina
       .filter((op: any) => op && op.pranchaId)
       .map((op: any) => [
-        `${op.data || "N/A"} ${op.hora || "N/A"}`,
+        `${op.data || "N/A"} ${op.hora || "--:--"}`,
         op.pranchaId || "N/A",
-        (op.solicitanteNome || "N/A").substring(0, 15),
-        op.duracaoHoras != null ? formatarDuracao(op.duracaoHoras) : "Em andamento",
+        op.solicitanteNome || "N/A",
+        op.duracaoHoras != null ? `${op.duracaoHoras}h` : "N/A",
         op.status || "OFICINA",
       ]);
-    
+
     if (oficinaRows.length === 0) return doc;
 
     autoTable(doc, {
       startY: oficinaY + 4,
-      head: [["Data/Hora", "Frota", "Justificativa", "Tempo", "Status"]],
+      head: [["Data/Hora", "Frota", "Justificativa", "Tempo (h)", "Status"]],
       body: oficinaRows,
       theme: "grid",
       headStyles: {
@@ -220,18 +230,24 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
         cellPadding: 1.5,
       },
       columnStyles: {
-        0: { cellWidth: 28 },
+        0: { cellWidth: 22 },
         1: { cellWidth: 16 },
-        2: { cellWidth: 48 },
-        3: { cellWidth: 28 },
+        2: { cellWidth: 32 },
+        3: { cellWidth: 20 },
         4: { cellWidth: 16 },
       },
       margin: { left: margin, right: margin },
       didDrawPage: (data) => {
-        addFooter((data.pageNumber as number));
+        addFooter(data.pageNumber as number);
       },
     });
-  } else if (data.totalOficinaOps && data.totalOficinaOps > 0 && data.oficinaOps && data.oficinaOps.length > 0 && lastTableY < pageHeight - 50) {
+  } else if (
+    data.totalOficinaOps &&
+    data.totalOficinaOps > 0 &&
+    data.oficinaOps &&
+    data.oficinaOps.length > 0 &&
+    lastTableY < pageHeight - 50
+  ) {
     const oficinaY = lastTableY + 10;
 
     doc.setFontSize(8);
@@ -270,11 +286,11 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
         1: { cellWidth: 16 },
         2: { cellWidth: 18 },
         3: { cellWidth: 18 },
-        4: { cellWidth: 56 },
+        4: { cellWidth: 44 },
       },
       margin: { left: margin, right: margin },
       didDrawPage: (data) => {
-        addFooter((data.pageNumber as number));
+        addFooter(data.pageNumber as number);
       },
     });
   }

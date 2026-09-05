@@ -69,14 +69,42 @@ export function RelatorioPage() {
     const toastId = toast.loading("Gerando PDF operacional nativo...");
     try {
       const oficinaEntries = frotas
-        .filter((f) => f.status === "OFICINA")
-        .map((f) => ({
-          data: f.oficinaEntradaEm?.toDate ? f.oficinaEntradaEm.toDate().toLocaleDateString('pt-BR') : (f.oficinaEntradaEm || "N/A"),
-          hora: f.oficinaEntradaEm?.toDate ? f.oficinaEntradaEm.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--',
-          pranchaId: f.frota,
-          solicitanteNome: f.justificativaManutencao?.substring(0, 15) || "Manutencao",
-          duracaoHoras: null,
-          status: "OFICINA",
+        .filter((f) => f.status === "OFICINA" && f.frota)
+        .map((f) => {
+          const entrada = f.oficinaEntradaEm?.toDate
+            ? f.oficinaEntradaEm.toDate()
+            : f.oficinaEntradaEm instanceof Date
+              ? f.oficinaEntradaEm
+              : null;
+          const now = new Date();
+          const duracaoHoras = entrada
+            ? Math.max(0, ((now.getTime() - entrada.getTime()) / (1000 * 60 * 60))).toFixed(1)
+            : "0.0";
+          return {
+            data: entrada ? entrada.toLocaleDateString("pt-BR") : new Date().toLocaleDateString("pt-BR"),
+            hora: entrada
+              ? entrada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+              : "--:--",
+            pranchaId: f.frota,
+            solicitanteNome: f.justificativaManutencao || "Manutencao",
+            duracaoHoras: parseFloat(duracaoHoras),
+            status: "OFICINA",
+          };
+        });
+
+      const oficinaOpsEntries = filteredData
+        .filter((r) => {
+          const statusUpper = (r.status || "").toUpperCase();
+          return statusUpper.includes("MANU") || statusUpper.includes("OFICINA");
+        })
+        .map((op) => ({
+          data: op.data || "N/A",
+          hora: op.hora || op.horarioRetirada || "N/A",
+          pranchaId: op.pranchaId || "N/A",
+          frenteTrabalho: op.frenteTrabalho || op.frenteId || "N/A",
+          status: op.status || "N/A",
+          origem: op.origem || "N/A",
+          destino: op.destino || "N/A",
         }));
 
       const emOficina = frotas.filter((f) => f.status === "OFICINA").length;
@@ -99,6 +127,8 @@ export function RelatorioPage() {
         },
         operacoes: filteredData,
         oficina: oficinaEntries,
+        oficinaOps: oficinaOpsEntries,
+        totalOficinaOps: oficinaOpsEntries.length,
       };
 
       const doc = generateOperationalReportPdf(reportData);
