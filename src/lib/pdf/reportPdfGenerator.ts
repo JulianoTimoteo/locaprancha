@@ -28,6 +28,8 @@ interface OperationalReportData {
   };
   operacoes: any[];
   oficina: any[];
+  oficinaOps?: any[];
+  totalOficinaOps?: number;
 }
 
 export const generateOperationalReportPdf = (data: OperationalReportData) => {
@@ -219,6 +221,52 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
         2: { cellWidth: 48 },
         3: { cellWidth: 28 },
         4: { cellWidth: 16 },
+      },
+      margin: { left: margin, right: margin },
+      didDrawPage: (data) => {
+        addFooter((data.pageNumber as number));
+      },
+    });
+  } else if (data.totalOficinaOps && data.totalOficinaOps > 0 && data.oficinaOps && data.oficinaOps.length > 0 && lastTableY < pageHeight - 50) {
+    const oficinaY = lastTableY + 10;
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(180, 0, 0);
+    doc.text("OPERACOES DE OFICINA", margin, oficinaY);
+
+    const oficinaRows = data.oficinaOps.map((op: any) => [
+      `${op.data || "N/A"} ${op.hora || "N/A"}`,
+      op.pranchaId || "N/A",
+      op.frenteTrabalho || "N/A",
+      op.status || "N/A",
+      `${op.origem || "N/A"} -> ${op.destino || "N/A"}`,
+    ]);
+
+    autoTable(doc, {
+      startY: oficinaY + 4,
+      head: [["Data/Hora", "Frota", "Frente", "Status", "Origem -> Destino"]],
+      body: oficinaRows,
+      theme: "grid",
+      headStyles: {
+        fillColor: [180, 0, 0],
+        textColor: [255, 255, 255],
+        fontSize: 7,
+        fontStyle: "bold",
+        halign: "center",
+        cellPadding: 1.5,
+      },
+      bodyStyles: {
+        fontSize: 7,
+        textColor: [0, 0, 0],
+        cellPadding: 1.5,
+      },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 16 },
+        2: { cellWidth: 18 },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 56 },
       },
       margin: { left: margin, right: margin },
       didDrawPage: (data) => {
