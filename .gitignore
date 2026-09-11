@@ -33,5 +33,9 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
+
+# Arquivos gerados e locais
+*.pdf
+.kilo/
+

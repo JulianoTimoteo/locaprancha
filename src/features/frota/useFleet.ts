@@ -129,19 +129,27 @@ export function useFleet() {
 
       const payload: any = {
         status: newStatus,
-        justificativaManutencao: justificativa || "",
+        justificativaManutencao:
+          justificativa !== undefined ? justificativa : old.justificativaManutencao || "",
         updatedAt: serverTimestamp(),
         updatedBy: profile?.uid || "unknown",
       };
 
       if (newStatus === "OFICINA") {
-        payload.oficinaEntradaEm = serverTimestamp();
+        if (old.status !== "OFICINA" || !old.oficinaEntradaEm) {
+          payload.oficinaEntradaEm = serverTimestamp();
+        }
         payload.oficinaSaidaEm = null;
       } else if (old.status === "OFICINA") {
         payload.oficinaSaidaEm = serverTimestamp();
       }
 
       await updateDoc(doc(db, "frotas", id), payload);
+      try {
+        await updateDoc(doc(db, "frota", id), payload);
+      } catch {
+        // Ignora caso o documento não exista na coleção singular
+      }
 
       toast.success(`Frota ${newStatus === "OFICINA" ? "enviada para oficina" : "liberada"}`);
     } catch (e) {

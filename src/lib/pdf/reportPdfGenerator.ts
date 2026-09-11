@@ -191,8 +191,12 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
 
   const lastTableY = (doc as any).lastAutoTable?.finalY || currentY + 40;
 
-  if (data.oficina && data.oficina.length > 0 && lastTableY < pageHeight - 35) {
-    const oficinaY = lastTableY + 8;
+  if (data.oficina && data.oficina.length > 0) {
+    let oficinaY = lastTableY + 8;
+    if (oficinaY > pageHeight - 35) {
+      doc.addPage();
+      oficinaY = 16;
+    }
 
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
@@ -202,45 +206,57 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     const oficinaRows = data.oficina
       .filter((op: any) => op && op.pranchaId)
       .map((op: any) => [
-        `${op.data || "N/A"} ${op.hora || "--:--"}`,
+        op.dataHoraCompleta || `${op.data || "N/A"} ${op.hora || "--:--"}`,
         op.pranchaId || "N/A",
         op.solicitanteNome || "N/A",
-        op.duracaoHoras != null ? `${op.duracaoHoras}h` : "N/A",
+        op.tempoFormatado || (op.duracaoHoras != null ? `${op.duracaoHoras}h` : "N/A"),
         op.status || "OFICINA",
       ]);
 
-    if (oficinaRows.length === 0) return doc;
-
-    autoTable(doc, {
-      startY: oficinaY + 4,
-      head: [["Data/Hora", "Frota", "Justificativa", "Tempo (h)", "Status"]],
-      body: oficinaRows,
-      theme: "grid",
-      headStyles: {
-        fillColor: [180, 0, 0],
-        textColor: [255, 255, 255],
-        fontSize: 7,
-        fontStyle: "bold",
-        halign: "center",
-        cellPadding: 1.5,
-      },
-      bodyStyles: {
-        fontSize: 7,
-        textColor: [0, 0, 0],
-        cellPadding: 1.5,
-      },
-      columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 16 },
-        2: { cellWidth: 32 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 16 },
-      },
-      margin: { left: margin, right: margin },
-      didDrawPage: (data) => {
-        addFooter(data.pageNumber as number);
-      },
-    });
+    if (oficinaRows.length > 0) {
+      autoTable(doc, {
+        startY: oficinaY + 4,
+        head: [["Data/Hora", "Frota", "Justificativa", "Tempo (h)", "Status"]],
+        body: oficinaRows,
+        theme: "grid",
+        headStyles: {
+          fillColor: [180, 0, 0],
+          textColor: [255, 255, 255],
+          fontSize: 7,
+          fontStyle: "bold",
+          halign: "center",
+          cellPadding: 1.5,
+        },
+        bodyStyles: {
+          fontSize: 7,
+          textColor: [0, 0, 0],
+          cellPadding: 1.5,
+        },
+        columnStyles: {
+          0: { cellWidth: 32, halign: "center" },
+          1: { cellWidth: 18, halign: "center" },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 20, halign: "center" },
+          4: { cellWidth: 22, halign: "center" },
+        },
+        didParseCell: (hookData) => {
+          if (hookData.section === "body" && hookData.column.index === 4) {
+            const val = String(hookData.cell.raw).toUpperCase();
+            if (val.includes("LIBERADO")) {
+              hookData.cell.styles.textColor = [16, 128, 48];
+              hookData.cell.styles.fontStyle = "bold";
+            } else if (val.includes("OFICINA")) {
+              hookData.cell.styles.textColor = [180, 0, 0];
+              hookData.cell.styles.fontStyle = "bold";
+            }
+          }
+        },
+        margin: { left: margin, right: margin },
+        didDrawPage: (data) => {
+          addFooter(data.pageNumber as number);
+        },
+      });
+    }
   } else if (
     data.totalOficinaOps &&
     data.totalOficinaOps > 0 &&

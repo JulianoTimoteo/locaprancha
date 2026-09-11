@@ -68,27 +68,120 @@ export function RelatorioPage() {
   const exportPDF = async () => {
     const toastId = toast.loading("Gerando PDF operacional nativo...");
     try {
+      const parseDataRobust = (val: any): Date | null => {
+        if (!val) return null;
+        if (typeof val.toDate === "function") {
+          try {
+            const d = val.toDate();
+            if (d instanceof Date && !isNaN(d.getTime())) return d;
+          } catch {
+            // Continua fallbacks
+          }
+        }
+        if (val instanceof Date) {
+          return isNaN(val.getTime()) ? null : val;
+        }
+        if (typeof val === "object") {
+          if (typeof val.seconds === "number") {
+            return new Date(val.seconds * 1000 + (val.nanoseconds ? val.nanoseconds / 1000000 : 0));
+          }
+          if (typeof val._seconds === "number") {
+            return new Date(val._seconds * 1000 + (val._nanoseconds ? val._nanoseconds / 1000000 : 0));
+          }
+        }
+        if (typeof val === "string" || typeof val === "number") {
+          const d = new Date(val);
+          if (!isNaN(d.getTime())) return d;
+        }
+        return null;
+      };
+
       const oficinaEntries = frotas
-        .filter((f) => f.status === "OFICINA" && f.frota)
+        .filter((f) => {
+          if (!f || !f.frota) return false;
+          if (filters.pranchaId && filters.pranchaId !== "Todos" && f.frota !== filters.pranchaId) {
+            return false;
+          }
+
+          const isEmOficina = f.status === "OFICINA";
+          const temHistoricoOficina = !!(
+            f.oficinaEntradaEm ||
+            f.oficinaSaidaEm ||
+            (f.justificativaManutencao && f.justificativaManutencao.trim().length > 0)
+          );
+
+          if (!isEmOficina && !temHistoricoOficina) return false;
+
+          const entrada =
+            parseDataRobust(f.oficinaEntradaEm) ||
+            (isEmOficina ? parseDataRobust(f.updatedAt) || parseDataRobust(f.createdAt) : null);
+          const saida =
+            parseDataRobust(f.oficinaSaidaEm) ||
+            (!isEmOficina ? parseDataRobust(f.updatedAt) : null);
+
+          // Filtragem de período
+          if (filters.dataInicio || filters.dataFim) {
+            const dataInicioFiltro = filters.dataInicio || "1970-01-01";
+            const dataFimFiltro = filters.dataFim || "9999-12-31";
+
+            const entradaStr = entrada ? entrada.toLocaleDateString("sv-SE") : "";
+            const saidaStr = saida ? saida.toLocaleDateString("sv-SE") : "";
+
+            if (isEmOficina) {
+              if (entradaStr && entradaStr > dataFimFiltro) return false;
+            } else {
+              if (entradaStr && entradaStr > dataFimFiltro) return false;
+              if (saidaStr && saidaStr < dataInicioFiltro) return false;
+            }
+          }
+
+          return true;
+        })
         .map((f) => {
-          const entrada = f.oficinaEntradaEm?.toDate
-            ? f.oficinaEntradaEm.toDate()
-            : f.oficinaEntradaEm instanceof Date
-              ? f.oficinaEntradaEm
-              : null;
+          const isEmOficina = f.status === "OFICINA";
           const now = new Date();
-          const duracaoHoras = entrada
-            ? Math.max(0, ((now.getTime() - entrada.getTime()) / (1000 * 60 * 60))).toFixed(1)
-            : "0.0";
+
+          let entrada = parseDataRobust(f.oficinaEntradaEm);
+          if (!entrada) {
+            entrada = parseDataRobust(f.updatedAt) || parseDataRobust(f.createdAt) || now;
+          }
+
+          let saida = parseDataRobust(f.oficinaSaidaEm);
+          if (!isEmOficina && !saida) {
+            saida = parseDataRobust(f.updatedAt) || now;
+          }
+
+          let duracaoHorasNum = 0;
+          if (isEmOficina) {
+            const diffMs = Math.max(0, now.getTime() - entrada.getTime());
+            duracaoHorasNum = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(1));
+          } else {
+            const diffMs = saida && entrada ? Math.max(0, saida.getTime() - entrada.getTime()) : 0;
+            duracaoHorasNum = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(1));
+          }
+
+          const dataEntradaStr = entrada.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          const horaEntradaStr = entrada.toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+          const dataHoraCompleta = `${dataEntradaStr} ${horaEntradaStr}`;
+          const statusTexto = isEmOficina ? "OFICINA" : "LIBERADO";
+
           return {
-            data: entrada ? entrada.toLocaleDateString("pt-BR") : new Date().toLocaleDateString("pt-BR"),
-            hora: entrada
-              ? entrada.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-              : "--:--",
+            data: dataEntradaStr,
+            hora: horaEntradaStr,
+            dataHoraCompleta,
             pranchaId: f.frota,
-            solicitanteNome: f.justificativaManutencao || "Manutencao",
-            duracaoHoras: parseFloat(duracaoHoras),
-            status: "OFICINA",
+            solicitanteNome: f.justificativaManutencao || "Manutenção",
+            duracaoHoras: duracaoHorasNum,
+            tempoFormatado: `${duracaoHorasNum}h`,
+            status: statusTexto,
           };
         });
 
