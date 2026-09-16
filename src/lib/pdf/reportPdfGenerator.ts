@@ -152,12 +152,13 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
     op.solicitanteNome || "N/A",
     formatarDuracao(calcularDuracaoOperacao(op)) || "N/A",
     op.status || "N/A",
+    op.observacao || "N/A",
   ]);
 
   autoTable(doc, {
     startY: currentY + 4,
     head: [
-      ["Data/Hora", "Frota", "Frente", "Origem -> Destino", "Solicitante", "Duracao", "Status"],
+      ["Data/Hora", "Frota", "Frente", "Origem -> Destino", "Solicitante", "Duracao", "Status", "Observações"],
     ],
     body: tableRows,
     theme: "grid",
@@ -175,13 +176,14 @@ export const generateOperationalReportPdf = (data: OperationalReportData) => {
       cellPadding: 1.5,
     },
     columnStyles: {
-      0: { cellWidth: 24 },
-      1: { cellWidth: 16 },
-      2: { cellWidth: 20 },
-      3: { cellWidth: 40 },
-      4: { cellWidth: 26 },
-      5: { cellWidth: 16 },
-      6: { cellWidth: 18 },
+      0: { cellWidth: 22 },
+      1: { cellWidth: 14 },
+      2: { cellWidth: 18 },
+      3: { cellWidth: 38 },
+      4: { cellWidth: 24 },
+      5: { cellWidth: 14 },
+      6: { cellWidth: 16 },
+      7: { cellWidth: "auto" },
     },
     margin: { left: margin, right: margin },
     didDrawPage: (data) => {
