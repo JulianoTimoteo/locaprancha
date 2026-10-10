@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useReservas } from "./useReservas";
 import { useFleet } from "@/features/frota/useFleet";
 
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Search, X } from "lucide-react";
 
 interface ReservaFormProps {
   open: boolean;
@@ -94,32 +95,76 @@ export function ReservaForm({
     [pranchas],
   );
 
-  const equipamentosFiltrados = React.useMemo(() => {
-    if (!formData.frenteId) return equipamentos;
-    const frente = frentes.find((f) => f.id === formData.frenteId);
-    if (!frente) return equipamentos;
-    const nomeFrente = frente.nome.toUpperCase();
+  const [buscaEquipamento, setBuscaEquipamento] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fecha o dropdown se o usuário clicar fora do campo
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Busca em TODOS os equipamentos cadastrados da empresa (sem vínculo restritivo com Frente)
+  const equipamentosFiltradosPorBusca = useMemo(() => {
+    const termo = buscaEquipamento.trim().toLowerCase();
+    if (!termo) return equipamentos;
     return equipamentos.filter((e) => {
-      if (e.frenteId === formData.frenteId) return true;
-      if (e.tipo && e.tipo.toUpperCase() === nomeFrente) return true;
-      if (
-        e.tipo &&
-        e.tipo.includes("FRENTE") &&
-        nomeFrente.includes(e.tipo.split("FRENTE")[1]?.trim() || "")
-      )
-        return true;
-      return false;
+      const cod = (e.codigo || "").toLowerCase();
+      const nome = (e.nome || "").toLowerCase();
+      const tipo = (e.tipo || "").toLowerCase();
+      return cod.includes(termo) || nome.includes(termo) || tipo.includes(termo);
     });
-  }, [formData.frenteId, frentes, equipamentos]);
+  }, [equipamentos, buscaEquipamento]);
+
+  // Identifica se o equipamento selecionado ou digitado pertence à frota cadastrada
+  const equipamentoCadastrado = useMemo(() => {
+    if (formData.equipamentoId) {
+      const found = equipamentos.find((e) => e.id === formData.equipamentoId);
+      if (found) return found;
+    }
+    const termo = buscaEquipamento.trim().toLowerCase();
+    if (!termo) return null;
+    return (
+      equipamentos.find(
+        (e) =>
+          (e.codigo && e.codigo.trim().toLowerCase() === termo) ||
+          `[${e.codigo}] - ${e.nome}`.toLowerCase() === termo,
+      ) || null
+    );
+  }, [formData.equipamentoId, buscaEquipamento, equipamentos]);
+
+  const isEquipamentoCadastrado = Boolean(equipamentoCadastrado);
+
+  // Se o equipamento não tem cadastro (terceirizado) E a frente for OUTROS, as observações são obrigatórias
+  const isObservacaoObrigatoria = isOutros && !isEquipamentoCadastrado;
 
   const [submitting, setSubmitting] = useState(false);
 
   // Sync with initialData (e.g. from Fleet screen)
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       const now = new Date();
       const today = now.toISOString().split("T")[0];
       const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      let initTexto = "";
+      if (initialData?.equipamentoId) {
+        const eq = equipamentos.find((e) => e.id === initialData.equipamentoId);
+        if (eq) initTexto = `[${eq.codigo}] - ${eq.nome}`;
+      } else if (initialData?.equipamentoNome) {
+        initTexto = initialData.equipamentoNome;
+      } else if (initialData?.equipamentoManual) {
+        initTexto = initialData.equipamentoManual;
+      }
+
+      setBuscaEquipamento(initTexto);
+      setIsDropdownOpen(false);
 
       setFormData((prev) => ({
         ...prev,
@@ -127,37 +172,50 @@ export function ReservaForm({
         hora: currentTime,
         horarioRetirada: currentTime,
         pranchaId: initialData?.pranchaId || "",
+        equipamentoId: initialData?.equipamentoId || "",
+        equipamentoManual: initialData?.equipamentoManual || initTexto,
         ...initialData,
       }));
+    } else {
+      setIsDropdownOpen(false);
     }
-  }, [open, initialData]);
+  }, [open, initialData, equipamentos]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.pranchaId || !formData.frenteId) return;
-
-    if (isOutros && !formData.equipamentoManual.trim()) {
-      toast.error("Informe o equipamento/frota.");
+    if (!formData.pranchaId) {
+      toast.error("Selecione a prancha.");
       return;
     }
 
-    if (isOutros && !formData.observacao.trim()) {
-      toast.error("Informe as observações.");
+    if (!formData.frenteId) {
+      toast.error("Selecione a frente operacional.");
+      return;
+    }
+
+    const nomeEquipamentoFinal = equipamentoCadastrado
+      ? `[${equipamentoCadastrado.codigo}] - ${equipamentoCadastrado.nome}`
+      : buscaEquipamento.trim() || formData.equipamentoManual.trim();
+
+    if (!nomeEquipamentoFinal) {
+      toast.error("Informe a frota ou o equipamento.");
+      return;
+    }
+
+    if (isObservacaoObrigatoria && !formData.observacao.trim()) {
+      toast.error(
+        "Obrigatório: descreva o equipamento/motivo nas Observações (equipamento fora da frota cadastrada na frente OUTROS)."
+      );
       return;
     }
 
     setSubmitting(true);
     try {
-      const equipamentoNome = isOutros
-        ? formData.equipamentoManual.trim()
-        : (() => {
-            const eq = equipamentos.find((e) => e.id === formData.equipamentoId);
-            return eq ? `[${eq.codigo}] - ${eq.nome}` : "";
-          })();
-
       const payload = {
         ...formData,
-        equipamentoNome,
+        equipamentoId: equipamentoCadastrado ? equipamentoCadastrado.id : null,
+        equipamentoNome: nomeEquipamentoFinal,
+        equipamentoManual: equipamentoCadastrado ? "" : nomeEquipamentoFinal,
         frenteTrabalho: formData.frenteTrabalho || formData.frenteId,
         hora: formData.horarioRetirada,
         solicitante: "",
@@ -170,6 +228,8 @@ export function ReservaForm({
       }
 
       onOpenChange(false);
+      setBuscaEquipamento("");
+      setIsDropdownOpen(false);
       setFormData({
         pranchaId: "",
         frenteId: "",
@@ -292,78 +352,118 @@ export function ReservaForm({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-bold uppercase text-[10px] text-muted-foreground">
-                Equipamento
-              </label>
-              {isOutros ? (
-                <Input
-                  value={formData.equipamentoManual}
-                  onChange={(e) => setFormData({ ...formData, equipamentoManual: e.target.value })}
-                  placeholder="Digite a frota/equipamento (texto ou número)"
-                  className="font-bold"
-                  required={isOutros}
-                />
-              ) : (
-                <Select
-                  value={formData.equipamentoId}
-                  onValueChange={(val) => {
-                    const eq = equipamentos.find((e) => e.id === val);
-                    if (eq) {
-                      const frenteRelacionada = frentes.find(
-                        (f) =>
-                          f.id === eq.frenteId ||
-                          (eq.tipo && f.nome.toUpperCase() === eq.tipo.toUpperCase()) ||
-                          (eq.tipo &&
-                            eq.tipo.includes("FRENTE") &&
-                            f.nome.includes(eq.tipo.split("FRENTE")[1]?.trim() || "")),
-                      );
+            <div className="space-y-2 relative" ref={dropdownRef}>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold uppercase text-[10px] text-muted-foreground">
+                  Equipamento / Frota *
+                </label>
+                {buscaEquipamento && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                      isEquipamentoCadastrado
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                        : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                    }`}
+                  >
+                    {isEquipamentoCadastrado ? "Frota Cadastrada" : "Terceirizado / Avulso"}
+                  </span>
+                )}
+              </div>
 
-                      setFormData({
-                        ...formData,
-                        equipamentoId: val,
-                        frenteId: frenteRelacionada?.id || formData.frenteId,
-                        frenteTrabalho: frenteRelacionada?.nome || formData.frenteTrabalho,
-                      });
-                    } else {
-                      setFormData({ ...formData, equipamentoId: val });
-                    }
+              <div className="relative">
+                <Input
+                  value={buscaEquipamento}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setBuscaEquipamento(val);
+                    setFormData((prev) => ({
+                      ...prev,
+                      equipamentoId: "",
+                      equipamentoManual: val,
+                    }));
+                    setIsDropdownOpen(true);
                   }}
-                >
-                  <SelectTrigger className="font-bold">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {equipamentosFiltrados.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        <div className="flex flex-col text-left">
-                          <span className="font-bold">
-                            [{e.codigo}] - {e.nome}
-                          </span>
-                          <span className="text-[10px] opacity-70 uppercase">{e.tipo}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onFocus={() => setIsDropdownOpen(true)}
+                  placeholder="Digite a frota/equipamento (texto ou número)"
+                  className="font-bold pr-8"
+                  required
+                />
+                {buscaEquipamento ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBuscaEquipamento("");
+                      setFormData((prev) => ({
+                        ...prev,
+                        equipamentoId: "",
+                        equipamentoManual: "",
+                      }));
+                      setIsDropdownOpen(false);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1"
+                    title="Limpar equipamento"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground w-3.5 h-3.5 pointer-events-none" />
+                )}
+              </div>
+
+              {/* Dropdown com a lista de todos os equipamentos cadastrados */}
+              {isDropdownOpen && (
+                <div className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-lg">
+                  {equipamentosFiltradosPorBusca.length > 0 ? (
+                    equipamentosFiltradosPorBusca.map((eq) => (
+                      <div
+                        key={eq.id}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setFormData((prev) => ({
+                            ...prev,
+                            equipamentoId: eq.id,
+                            equipamentoManual: "",
+                          }));
+                          setBuscaEquipamento(`[${eq.codigo}] - ${eq.nome}`);
+                          setIsDropdownOpen(false);
+                        }}
+                        className="flex flex-col p-2 hover:bg-accent hover:text-accent-foreground cursor-pointer rounded text-left transition-colors"
+                      >
+                        <span className="font-bold text-sm">
+                          [{eq.codigo}] - {eq.nome}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground uppercase">
+                          {eq.tipo || "Frota Geral"}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-xs text-muted-foreground text-center">
+                      <p className="font-semibold text-foreground">
+                        Nenhum equipamento cadastrado para &quot;{buscaEquipamento}&quot;
+                      </p>
+                      <p className="mt-1 text-[11px]">
+                        Será considerado <strong>Equipamento Terceirizado / Não cadastrado</strong>.
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-bold uppercase text-[10px] text-muted-foreground">
-                Frente Operacional
+                Frente Operacional *
               </label>
               <Select
                 value={formData.frenteId}
                 onValueChange={(val) => {
                   const frente = frentes.find((f) => f.id === val);
-                  setFormData({
-                    ...formData,
+                  setFormData((prev) => ({
+                    ...prev,
                     frenteId: val,
                     frenteTrabalho: frente?.nome || val,
-                    equipamentoManual: "",
-                    equipamentoId: "",
-                  });
+                  }));
                 }}
               >
                 <SelectTrigger className="font-bold">
@@ -382,21 +482,38 @@ export function ReservaForm({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Observações</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                Observações{" "}
+                {isObservacaoObrigatoria && <span className="text-destructive font-bold">*</span>}
+              </label>
+              {isObservacaoObrigatoria && (
+                <span className="text-[10px] text-destructive font-semibold">
+                  Obrigatório para equipamento terceirizado na frente OUTROS
+                </span>
+              )}
+            </div>
             <Textarea
               value={formData.observacao}
               onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
               placeholder={
-                isOutros
+                isObservacaoObrigatoria
                   ? "Obrigatório: descreva o equipamento/motivo (fora da frota cadastrada)"
                   : "Informações adicionais..."
               }
-              required={isOutros}
+              required={isObservacaoObrigatoria}
             />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsDropdownOpen(false);
+                onOpenChange(false);
+              }}
+            >
               Cancelar
             </Button>
             <Button

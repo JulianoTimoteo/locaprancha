@@ -69,5 +69,12 @@ export function useDashboardData() {
     })
     .slice(0, 10);
 
-  return { stats, reservas: proximosTransportes, loading, error };
+  return {
+    stats,
+    reservas: proximosTransportes,
+    pranchas,
+    agendaCompleta: agenda,
+    loading,
+    error,
+  };
 }

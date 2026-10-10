@@ -9,13 +9,14 @@ import { ptBR } from "date-fns/locale";
 import { cn, combineDateAndTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Truck, Calendar, Clock } from "lucide-react";
+import { RankingPranchas } from "./RankingPranchas";
 
 export function Dashboard() {
   React.useEffect(() => {
     document.title = "Dashboard Operacional | Locaprancha";
   }, []);
 
-  const { stats, reservas, loading, error } = useDashboardData();
+  const { stats, reservas, pranchas, agendaCompleta, loading, error } = useDashboardData();
   const { profile } = useAuth();
 
   const getStatusBadgeHome = (reserva: any) => {
@@ -253,6 +254,9 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ranking de Utilização das Pranchas (Horas Produtivas, Improdutivas e Oficina) */}
+      <RankingPranchas pranchas={pranchas} agenda={agendaCompleta} />
     </div>
   );
 }
